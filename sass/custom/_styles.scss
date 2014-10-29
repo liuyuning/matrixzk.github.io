@@ -1,2 +1,67 @@
 // This File is imported last, and will override other styles in the cascade
 // Add styles here to make changes without digging in too much
+
+// 去掉链接下划线
+a {
+  @include link-colors($link-color, $hover: $link-color-hover, $focus: $link-color-hover, $visited: $link-color-visited, $active: $link-color-active);
+  text-decoration: none
+}
+
+
+
+//////////////// 定义自动生成的目录的样式
+
+#markdown-toc:before {
+	content:"本文目录";
+	font-weight:bold;
+	font-size:1.2em;
+	font-family:"Verdana","STXihei","华文细黑","STHeitiSC","华文黑体","Microsoft YaHei","Optima",sans-serif;
+	line-height:2em
+}
+
+.blog-index #markdown-toc {
+	display:none
+}
+
+ul#markdown-toc {
+	#list-style:none;
+	border:none;
+	padding:0.6em 2.5em 1.2em;
+	margin-top:0.25em;
+	margin-bottom:1.25em;
+	margin-left:0;
+	font-style:normal;
+	font-size:1em;
+	line-height:1.75em;
+	-webkit-border-radius:8px;
+	-moz-border-radius:8px;
+	border-radius:8px;
+	-webkit-box-shadow:0 4px 4px rgba(0,0,0,0.3);
+	-moz-box-shadow:0 4px 4px rgba(0,0,0,0.3);
+	box-shadow:0 4px 4px rgba(0,0,0,0.3);
+	background-color:#D3D3D3
+}
+
+ul#markdown-toc a:link {
+	text-decoration:none;
+	color:#1863a1
+}
+
+ul#markdown-toc a:active {
+	color:#01579f
+}
+
+ul#markdown-toc a:hover {
+	color:#0181eb
+}
+
+ul#markdown-toc a:visited {
+	color:#751590
+}
+
+/////////////////////////////////////////////////
+
+
+
+
+
