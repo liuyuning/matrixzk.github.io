@@ -4,7 +4,7 @@
   <title><![CDATA[Matrixzk]]></title>
   <link href="http://matrixzk.github.io/atom.xml" rel="self"/>
   <link href="http://matrixzk.github.io/"/>
-  <updated>2014-10-29T15:16:07+08:00</updated>
+  <updated>2014-10-30T12:55:35+08:00</updated>
   <id>http://matrixzk.github.io/</id>
   <author>
     <name><![CDATA[matrixzk]]></name>
@@ -12,6 +12,66 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[iOS8 Day-by-Day :: Day 2 :: Sharing 扩展]]></title>
+    <link href="http://matrixzk.github.io/blog/20141029/ios8-day-by-day-day-2-sha-kuo-zhan/"/>
+    <updated>2014-10-29T19:16:20+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20141029/ios8-day-by-day-day-2-sha-kuo-zhan</id>
+    <content type="html"><![CDATA[<p>本文译自 : <a href="http://www.shinobicontrols.com/blog/posts/2014/07/21/ios8-day-by-day-day-2-sharing-extension">iOS8 Day-by-Day :: Day 2 :: Sharing Extension</a></p>
+
+<ul id="markdown-toc">
+  <li><a href="#section">简介</a></li>
+  <li><a href="#share-extention">创建一个分享扩展(Share Extention)</a></li>
+  <li><a href="#section-1">编译，运行和调试</a></li>
+  <li><a href="#section-2">指定可被分享的内容</a></li>
+  <li><a href="#validating">验证(Validating)用户输入</a></li>
+  <li><a href="#section-3">在扩展内部上传</a></li>
+  <li><a href="#section-4">提取一张图片并上传</a></li>
+  <li><a href="#section-5">执行后台上传</a></li>
+  <li><a href="#section-6">总结</a></li>
+</ul>
+
+<h2 id="section">简介</h2>
+
+<p>iOS8的一个<strong>重大</strong>新特色是引入了对扩展(<code>Extention</code>)的支持。通过它，开发者可以使用自己的功能和特色来增强操作系统的功能，包括第三方应用和苹果自家内置的应用。
+有如下6种扩展可适用于iOS：</p>
+
+<!-- more -->
+
+<ul>
+  <li>Today screen widgets</li>
+  <li>Share extensions</li>
+  <li>Actions</li>
+  <li>Photo editing</li>
+  <li>Storage providers</li>
+  <li>Custom keyboards</li>
+</ul>
+
+<p>在以后的系列博文中我们会讲到上述某些扩展，但今天的主题是Sharing Extentions(分享扩展)。</p>
+
+<p>Sharing Extentions给app的开发者一个将自己的app的icon展示在系统公共的分享面板(<code>share-sheet</code>)上的机会，然后处理用户所请求分享的内容。这就意味着你可以对系统展示的分享列表(比如 Twitter, Flickr, Sina Weibo 等)进行补充。</p>
+
+<p>先提个醒，这个主题并不简单。扩展的实现原理是非常复杂的。本文将向你介绍一些主要的使用场景，但请注意你可以构造更加漂亮的视觉展现。苹果在这方面提供了一些很棒的资源，当你被任何难点卡住的时候都可以阅读以下他们。</p>
+
+<h2 id="share-extention">创建一个分享扩展(Share Extention)</h2>
+
+<h2 id="section-1">编译，运行和调试</h2>
+
+<h2 id="section-2">指定可被分享的内容</h2>
+
+<h2 id="validating">验证(Validating)用户输入</h2>
+
+<h2 id="section-3">在扩展内部上传</h2>
+
+<h2 id="section-4">提取一张图片并上传</h2>
+
+<h2 id="section-5">执行后台上传</h2>
+
+<h2 id="section-6">总结</h2>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[iOS8 Day-by-Day :: Day1 :: Swift概述]]></title>

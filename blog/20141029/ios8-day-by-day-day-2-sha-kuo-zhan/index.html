@@ -5,7 +5,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Matrixzk</title>
+  <title>iOS8 Day-by-Day :: Day 2 :: Sharing 扩展 - Matrixzk</title>
   <meta name="author" content="matrixzk">
 
   
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://matrixzk.github.io">
+  <link rel="canonical" href="http://matrixzk.github.io/blog/20141029/ios8-day-by-day-day-2-sha-kuo-zhan">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Matrixzk" type="application/atom+xml">
@@ -83,15 +83,12 @@
 </nav>
   <div id="main">
     <div id="content">
-      <div class="blog-index">
+      <div>
+<article class="hentry" role="article">
   
-  
-  
-    <article>
-      
   <header>
     
-      <h1 class="entry-title"><a href="/blog/20141029/ios8-day-by-day-day-2-sha-kuo-zhan/">iOS8 Day-by-Day :: Day 2 :: Sharing 扩展</a></h1>
+      <h1 class="entry-title">iOS8 Day-by-Day :: Day 2 :: Sharing 扩展</h1>
     
     
       <p class="meta">
@@ -107,7 +104,7 @@
   </header>
 
 
-  <div class="entry-content"><p>本文译自 : <a href="http://www.shinobicontrols.com/blog/posts/2014/07/21/ios8-day-by-day-day-2-sharing-extension">iOS8 Day-by-Day :: Day 2 :: Sharing Extension</a></p>
+<div class="entry-content"><p>本文译自 : <a href="http://www.shinobicontrols.com/blog/posts/2014/07/21/ios8-day-by-day-day-2-sharing-extension">iOS8 Day-by-Day :: Day 2 :: Sharing Extension</a></p>
 
 <ul id="markdown-toc">
   <li><a href="#section">简介</a></li>
@@ -126,109 +123,114 @@
 <p>iOS8的一个<strong>重大</strong>新特色是引入了对扩展(<code>Extention</code>)的支持。通过它，开发者可以使用自己的功能和特色来增强操作系统的功能，包括第三方应用和苹果自家内置的应用。
 有如下6种扩展可适用于iOS：</p>
 
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/20141029/ios8-day-by-day-day-2-sha-kuo-zhan/">阅读全文 &rarr;</a>
-    </footer>
-  
+<!-- more -->
 
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/20141028/ios8-day-by-day-day1-swiftgai-shu/">iOS8 Day-by-Day :: Day1 :: Swift概述</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-28T20:38:03+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>8:38 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>本文译自 : <a href="http://www.shinobicontrols.com/blog/posts/2014/07/17/ios8-day-by-day-day-1-blaggers-guide-to-swift">iOS8 Day-by-Day :: Day 1 :: Blagger’s Guide to Swift</a></p>
-
-<ul id="markdown-toc">
-  <li><a href="#section">简介</a></li>
-  <li><a href="#initialisation">初始化(Initialisation)</a></li>
-  <li><a href="#mutability">可变性(Mutability)</a></li>
-  <li><a href="#strong-typinganyobject">强类型(<code>Strong Typing</code>)和<code>AnyObject</code></a></li>
-  <li><a href="#protocol-conformance">协议的一致性(Protocol Conformance)</a></li>
-  <li><a href="#enums">枚举(Enums)</a></li>
-  <li><a href="#section-1">总结</a></li>
+<ul>
+  <li>Today screen widgets</li>
+  <li>Share extensions</li>
+  <li>Actions</li>
+  <li>Photo editing</li>
+  <li>Storage providers</li>
+  <li>Custom keyboards</li>
 </ul>
 
-<h2 id="section">简介</h2>
+<p>在以后的系列博文中我们会讲到上述某些扩展，但今天的主题是Sharing Extentions(分享扩展)。</p>
 
-<p>今年的WWDC令人印象深刻，除了宣布<code>iOS8</code>，苹果还向我们介绍了一门新的编程语言–<code>Swift</code>。<code>Swift</code>和<code>objective-C</code>有很大的区别，它是强类型(<code>Strongly-typed</code>)的，并且包含有很多现代编程语言的特性。</p>
+<p>Sharing Extentions给app的开发者一个将自己的app的icon展示在系统公共的分享面板(<code>share-sheet</code>)上的机会，然后处理用户所请求分享的内容。这就意味着你可以对系统展示的分享列表(比如 Twitter, Flickr, Sina Weibo 等)进行补充。</p>
 
-<p>出于对新兴事物强大的热情和兴趣，这个博客系列将全程使用Swift。现在市面上已经有了很丰富的资源向我们介绍如何使用Swift，以及它是如何与Cocoa框架交互的。事实上，通过阅读如下官方文档开始你的Swift之旅是一个非常明智的选择:</p>
+<p>先提个醒，这个主题并不简单。扩展的实现原理是非常复杂的。本文将向你介绍一些主要的使用场景，但请注意你可以构造更加漂亮的视觉展现。苹果在这方面提供了一些很棒的资源，当你被任何难点卡住的时候都可以阅读以下他们。</p>
+
+<h2 id="share-extention">创建一个分享扩展(Share Extention)</h2>
+
+<h2 id="section-1">编译，运行和调试</h2>
+
+<h2 id="section-2">指定可被分享的内容</h2>
+
+<h2 id="validating">验证(Validating)用户输入</h2>
+
+<h2 id="section-3">在扩展内部上传</h2>
+
+<h2 id="section-4">提取一张图片并上传</h2>
+
+<h2 id="section-5">执行后台上传</h2>
+
+<h2 id="section-6">总结</h2>
 
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/20141028/ios8-day-by-day-day1-swiftgai-shu/">阅读全文 &rarr;</a>
-    </footer>
-  
 
 
-    </article>
-  
-  
-    <article>
+  <footer>
+    <p class="meta">
       
-  <header>
+  
+
+<!--
+<span class="byline author vcard">Posted by <span class="fn">matrixzk</span></span>
+<!-->
+
+<span class="byline author vcard"><span class="fn">matrixzk</span> 发表于 </span>
+      
+
+
+
+
+<time class='entry-date' datetime='2014-10-29T19:16:20+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>7:16 pm</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day</a>
+  
+</span>
+
+
+    </p>
     
-      <h1 class="entry-title"><a href="/blog/20141020/shi-yong-octopressda-jian-ji-yu-github-pagesge-ren-bo-ke-de-xiang-xi-guo-cheng-ji-yuan-li-fen-xi/">使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-10-20T21:55:36+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:55 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>前两天图省事，让一位梦想通过博客改变世界的<a href="http://droidyue.com/">小伙伴</a>帮我搭建了一个基于<a href="https://pages.github.com/">Github Pages</a>的个人博客，使用的是<a href="http://octopress.org/">Octopress</a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据<code>octopress</code>的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
-
-<p>PS.以下内容新手可以选择性参考，大神请绕道，谢谢 :]</p>
-
+      <div class="sharing">
+  
+  
+  
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/20141020/shi-yong-octopressda-jian-ji-yu-github-pagesge-ren-bo-ke-de-xiang-xi-guo-cheng-ji-yuan-li-fen-xi/">阅读全文 &rarr;</a>
-    </footer>
-  
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/20141028/ios8-day-by-day-day1-swiftgai-shu/" title="Previous Post: iOS8 Day-by-Day :: Day1 :: Swift概述">&laquo; iOS8 Day-by-Day :: Day1 :: Swift概述</a>
+      
+      
+    </p>
+  </footer>
+</article>
+<!--
+
+<!-->
 
 
-    </article>
+  <section>
+   <!-- 多说评论框 start -->
+<!--
+	<div class="ds-thread" data-thread-key="请将此处替换成文章在你的站点中的ID" data-title="请替换成文章的标题" data-url="请替换成文章的网址"></div>
+<!-->
+	<div class="ds-thread" data-thread-key="/blog/20141029/ios8-day-by-day-day-2-sha-kuo-zhan" data-title="iOS8 Day-by-Day :: Day 2 :: Sharing 扩展" data-url="http://matrixzk.github.io/blog/20141029/ios8-day-by-day-day-2-sha-kuo-zhan/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"matrixzk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.unstable.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+  </section>
+ 
   
-  <div class="pagination">
-    
-    <a href="/blog/archives">所有文章</a>
-    
-  </div>
 </div>
+
 <aside class="sidebar">
   
     <section>
@@ -264,6 +266,7 @@
 
   
 </aside>
+
 
     </div>
   </div>
