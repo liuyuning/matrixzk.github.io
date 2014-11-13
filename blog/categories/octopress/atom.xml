@@ -1,24 +1,155 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[分类：ios | Matrixzk]]></title>
-  <link href="http://matrixzk.github.io/blog/categories/ios/atom.xml" rel="self"/>
+  <title><![CDATA[分类：octopress | Matrixzk's Blog]]></title>
+  <link href="http://matrixzk.github.io/blog/categories/octopress/atom.xml" rel="self"/>
   <link href="http://matrixzk.github.io/"/>
-  <updated>2014-10-30T12:55:35+08:00</updated>
+  <updated>2014-11-13T21:24:16+08:00</updated>
   <id>http://matrixzk.github.io/</id>
   <author>
     <name><![CDATA[matrixzk]]></name>
-    
+    <email><![CDATA[matrixzk.me@gmail.com]]></email>
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
   
   <entry>
+    <title type="html"><![CDATA[Octopress 主题修改小记]]></title>
+    <link href="http://matrixzk.github.io/blog/20141103/octopress-custom-config/"/>
+    <updated>2014-11-03T13:30:57+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20141103/octopress-custom-config</id>
+    <content type="html"><![CDATA[<p>博客搭建起来后，总感觉默认的classic主题有些呆板，而且字体太大，阅读体验不是很好。于是就尝试着更改下主题。把Octopress的<strong><a href="https://github.com/imathis/octopress/wiki/3rd-Party-Octopress-Themes">推荐主题</a></strong>浏览了一遍后发现<a href="https://github.com/shashankmehta/greyshade">Greyshade</a>的效果还不错。但是安装后发现该主题有些细节还是不尽如人意，比如字体大小、行高、代码高亮背景，等等。经过一番调试后总算基本满意了，但是用移动设备打开后，顿时碎了。它的样式对移动设备真是差劲，比如代码高亮字体大小不一、左右滑动后右边有一条不窄的黑边并且消不去、左侧边栏在ipad上不能很好的适应，等等等等。相比之下Octopress的默认主题对移动设备的支持就要好太多，几乎完美，而且由于样式不花哨，很好的突出了内容主体。也许这就是这个主题的设计初衷吧，以内容为主体，淡化样式。对于博客来说，阅读体验才是重中之重，而且在这个移动互联网的时代，对移动设备的支持也必须到位。出于以上考虑，我又换回了默认的classic主题，但决定对其进行个性化改造。
+<!-- more --></p>
+
+<ul id="markdown-toc">
+  <li><a href="#section">基本方法</a></li>
+  <li><a href="#section-1">修改网页模板</a></li>
+  <li><a href="#section-2">修改网页样式</a></li>
+  <li><a href="#section-3">参考链接</a></li>
+</ul>
+
+<h2 id="section">基本方法</h2>
+
+<p>主要使用到Chrome的<code>审核元素</code>工具，通过它定位到想要修改的地方，然后根据相应的<code>css</code>标记或关键字(比如title什么的)，在命令行中通过<code>grep "your_keyword" ./ -R</code>在<code>source</code>或<code>sass</code>目录下定位到相应的文件，然后对其进行修改。这里的修改分为对网页模板的修改和对样式的修改，之后会提到。</p>
+
+<p>另外说一个关于主题切换的小技巧。比如你通过修改源文件，或者通过修改第三方的主题，配置出了一套新的主题，但感觉不是很满意。此时如果通过<code>rake install</code>再去安装别的主题，就会把之前的主题给覆盖掉(关于该命令详细做了什么，参考根目录下的<code>Rakefile</code>文件)。你可能想把两套主题都保留着，毕竟是用心配置出来的嘛。这时你可以将每套主题的<code>source</code>或<code>sass</code>目录做个备份，想要切换到哪个主题时，就把为该主题所备份的上述两个目录拷贝到根目录下，然后执行如下两个操作：</p>
+
+<pre><code>rake clean          # 清除缓存
+rake generate       # 重新生成网站
+</code></pre>
+
+<p>这时用<code>rake preview</code>看下效果。可能需要多刷新几次才能看到新的效果，原因还是缓存，be patient~</p>
+
+<p>忍不住想说一下我遇到的一个坑。在Octopress源码中，注释代码应该这样：</p>
+
+<pre><code>&lt;!--
+我被注释掉了 :]
+&lt;!--&gt;
+</code></pre>
+
+<p>而不是这样：</p>
+
+<pre><code>&lt;!--
+我被注释掉了 :]
+--&gt;
+</code></pre>
+
+<p>对当时的我来说，这真是个坑啊。不要告诉我你没发现区别 :]</p>
+
+<h2 id="section-1">修改网页模板</h2>
+
+<p>这里主要包括对网页的头标签、顶部、导航栏、底部和侧边栏的修改。相关目录如下：</p>
+
+<pre><code>octopress/
+|__ source/
+	|__ _includes/  	# 主要用到的子模板
+		|__ custom/     # 对 head, header, navigation, footer 和 sidebar 的自定义模板
+		|__ asides/     # 侧边栏的子模板
+		|__ post/       # 所发布文章的时间、作者等元信息，以及分享评论等子模板
+</code></pre>
+
+<p>比如，想要修改网页的&lt;head&gt;标签下的信息，对<code>/source/_includes/custom/head.html</code>进行相应修改即可。想要修改网页顶部(导航栏上边)的内容，修改<code>/source/_includes/custom/header.html</code>即可。如果想在导航栏中添加新的标签，修改<code>/source/_includes/custom/navigation.html</code>文件即可。</p>
+
+<p>可参考官方文档<a href="http://octopress.org/docs/theme/template/">Theming &amp; Customization</a>。</p>
+
+<h2 id="section-2">修改网页样式</h2>
+
+<p>这里主要对网页的字体、字号、颜色、背景图、行间距和边框间距等样式进行修改。相关目录如下：</p>
+
+<pre><code>octopress/
+|__ sass/
+	|__ base/
+	|	|__ _theme.scss      # 用到的所有color都定义在这里
+	|	|__ _layout.scss     # 响应式布局在这里定义
+	|	|__ _solarized.scss  # 主要定义文章的排版，包括字体、字号、行间距和字体颜色引用等
+	|	
+	|__ custom/              # 修改这里的文件可以轻松得进行样式自定义
+		|__ _colors.scss     # 这里可通过重写 base/_theme.scss 中的颜色变量来改变相应的颜色
+		|__ _styles.scss     # 该文件在最后时刻引入，因此在这里可重写网页外观的所有样式
+		|__ _layout.scss     # 在这里可通过重写 base/_layout.scss 中的变量改变布局
+
+</code></pre>
+
+<p>Octopress用到的所有颜色都通过<code>Sass</code>变量在<code>/sass/base/_theme.scss</code>中定义着。如果要修改某处颜色，最好是在<code>sass/custom/_colors.scss</code>中重写在<code>sass/base/_theme.scss</code>中所定义的相应颜色变量。这里很多color是使用<a href="http://sass-lang.com/documentation/Sass/Script/Functions.html">Sass’s color functions</a>获取的。</p>
+
+<p><strong>注意</strong>，以后要修改其他样式时，也最好遵守这样一个原则，尽量在<code>sass/custom/</code>目录下修改相应的文件。因为<code>sass/custom/</code>中的文件是在<code>sass/base</code>中文件之后被读取的，因此<code>sass/custom/</code>目录的内容决定着最终的样式。而且当通过<code>rake update</code>更新Octopress框架源码时，<code>sass/custom/</code>目录是不会被覆盖的，也就是你之前所做的自定义样式依然会保留，而<code>sass/base</code>目录下的文件会全部被更新后的Octopress框架源码给覆盖掉。</p>
+
+<p>可参考官方文档<a href="http://octopress.org/docs/theme/styles/">Styles</a>。</p>
+
+<h2 id="section-3">参考链接</h2>
+
+<p>基于上述方法基本就可以对你的博客外观进行随心所欲的修改了，如果再懂点儿css和sass知识就会更得心应手，关于css和sass参考<a href="http://blog.visioncan.com/2011/sass-scss-your-css/"><strong>这里</strong></a>。</p>
+
+<p>除了非常棒的Octopress<a href="http://octopress.org/docs/"><strong>官方文档</strong></a>，另外提供几个参考链接：</p>
+
+<ul>
+  <li><a href="http://www.rubydoc.info/gems/octopress-date-format/2.0.1/frames">Octopress Date Format</a></li>
+  <li><a href="http://shengmingzhiqing.com/blog/octopress-tutorials-toc.html/">Octopress 教程目录</a></li>
+  <li><a href="http://812lcl.com/blog/2013/10/27/octopresszhu-ti-yang-shi-xiu-gai/">Octopress主题样式修改</a></li>
+  <li><a href="http://shanewfx.github.io/blog/2012/08/13/improve-blog-theme/">Octopress主题改造</a></li>
+</ul>
+
+<!--
+## 主题修改
+
+下面简要说下我所做的修改。
+
+### 修改字体大小
+
+### 修改通过四个空格缩进时高亮的文字颜色
+
+### 修改日期样式
+
+### 更改网页背景图片
+
+### 改造导航栏
+
+### 增大header高度
+
+### 去掉超链接下划线
+
+### 增加文章目录
+
+### 增加分类侧边栏
+
+### 增加回到顶部按钮
+
+### 增加多说评论
+
+### 缩小正文现实区域的高度
+
+### 加快博客访问速度
+<!-->
+
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析]]></title>
-    <link href="http://matrixzk.github.io/blog/20141020/shi-yong-octopressda-jian-ji-yu-github-pagesge-ren-bo-ke-de-xiang-xi-guo-cheng-ji-yuan-li-fen-xi/"/>
+    <link href="http://matrixzk.github.io/blog/20141020/octopress-setup-and-analysis/"/>
     <updated>2014-10-20T21:55:36+08:00</updated>
-    <id>http://matrixzk.github.io/blog/20141020/shi-yong-octopressda-jian-ji-yu-github-pagesge-ren-bo-ke-de-xiang-xi-guo-cheng-ji-yuan-li-fen-xi</id>
-    <content type="html"><![CDATA[<p>前两天图省事，让一位梦想通过博客改变世界的<a href="http://droidyue.com/">小伙伴</a>帮我搭建了一个基于<a href="https://pages.github.com/">Github Pages</a>的个人博客，使用的是<a href="http://octopress.org/">Octopress</a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据<code>octopress</code>的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
+    <id>http://matrixzk.github.io/blog/20141020/octopress-setup-and-analysis</id>
+    <content type="html"><![CDATA[<p>前两天图省事，让一位梦想通过博客改变世界的<strong><a href="http://droidyue.com/">小伙伴</a></strong>帮我搭建了一个基于<a href="https://pages.github.com/">Github Pages</a>的个人博客，使用的是<a href="http://octopress.org/">Octopress</a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据<code>octopress</code>的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
 
 <p>PS.以下内容新手可以选择性参考，大神请绕道，谢谢 :]</p>
 

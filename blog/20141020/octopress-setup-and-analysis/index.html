@@ -5,7 +5,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析 - Matrixzk</title>
+  <title>使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析 - Matrixzk&#8217;s Blog</title>
   <meta name="author" content="matrixzk">
 
   
@@ -18,10 +18,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://matrixzk.github.io/blog/20141020/shi-yong-octopressda-jian-ji-yu-github-pagesge-ren-bo-ke-de-xiang-xi-guo-cheng-ji-yuan-li-fen-xi">
+  <link rel="canonical" href="http://matrixzk.github.io/blog/20141020/octopress-setup-and-analysis">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
-  <link href="/atom.xml" rel="alternate" title="Matrixzk" type="application/atom+xml">
+  <link href="/atom.xml" rel="alternate" title="Matrixzk's Blog" type="application/atom+xml">
   <script src="/javascripts/modernizr-2.0.js"></script>
   <!--
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
@@ -56,7 +56,7 @@
 
 <body   >
   <header role="banner"><hgroup>
-  <h1><a href="/">Matrixzk</a></h1>
+  <h1><a href="/">Matrixzk&#8217;s Blog</a></h1>
   
     <h2>Do more do better.</h2>
   
@@ -68,16 +68,12 @@
   
 </ul>
   
-<form action="http://bing.com/" method="get">
-  <fieldset role="search">
-    <input type="hidden" name="q" value="site:matrixzk.github.io" />
-    <input class="search" type="text" name="q" results="0" placeholder="搜索"/>
-  </fieldset>
-</form>
-  
 <ul class="main-navigation">
   <li><a href="/">首页</a></li>
+  <li><font color=#f2f2f2>|</font></li>
   <li><a href="/blog/archives">所有文章</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/about/about.html">关于我</a></li>
 </ul>
 
 </nav>
@@ -93,18 +89,22 @@
     
       <p class="meta">
         
+<!-- post.date_time_html -->
 
 
 
+<!--
 
-<time class='entry-date' datetime='2014-10-20T21:55:36+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:55 pm</span></time>
+
+<!-->
+Oct 20th, 2014
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>前两天图省事，让一位梦想通过博客改变世界的<a href="http://droidyue.com/">小伙伴</a>帮我搭建了一个基于<a href="https://pages.github.com/">Github Pages</a>的个人博客，使用的是<a href="http://octopress.org/">Octopress</a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据<code>octopress</code>的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
+<div class="entry-content"><p>前两天图省事，让一位梦想通过博客改变世界的<strong><a href="http://droidyue.com/">小伙伴</a></strong>帮我搭建了一个基于<a href="https://pages.github.com/">Github Pages</a>的个人博客，使用的是<a href="http://octopress.org/">Octopress</a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据<code>octopress</code>的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
 
 <p>PS.以下内容新手可以选择性参考，大神请绕道，谢谢 :]</p>
 
@@ -452,18 +452,22 @@
 <span class="byline author vcard">Posted by <span class="fn">matrixzk</span></span>
 <!-->
 
-<span class="byline author vcard"><span class="fn">matrixzk</span> 发表于 </span>
+<span class="byline author vcard"><span class="fn">matrixzk •
       
+<!-- post.date_time_html -->
 
 
 
+<!--
 
-<time class='entry-date' datetime='2014-10-20T21:55:36+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:55 pm</span></time>
+
+<!-->
+Oct 20th, 2014 •
       
 
 <span class="categories">
   
-    <a class='category' href='/blog/categories/ios/'>ios</a>
+    <a class='category' href='/blog/categories/octopress/'>octopress</a>
   
 </span>
 
@@ -480,7 +484,8 @@
     <p class="meta">
       
       
-        <a class="basic-alignment right" href="/blog/20141028/ios8-day-by-day-day1-swiftgai-shu/" title="Next Post: iOS8 Day-by-Day :: Day1 :: Swift概述">iOS8 Day-by-Day :: Day1 :: Swift概述 &raquo;</a>
+        <a class="basic-alignment right" href="/blog/20141028/ios8-day1-swift-overview/" title="Next Post: iOS8 Day-by-Day :: Day1 :: Swift概述">iOS8 Day-by-Day :: Day1 :: Swift概述 &rarr;</a>
+        <!-- &raquo; -->
       
     </p>
   </footer>
@@ -495,7 +500,7 @@
 <!--
 	<div class="ds-thread" data-thread-key="请将此处替换成文章在你的站点中的ID" data-title="请替换成文章的标题" data-url="请替换成文章的网址"></div>
 <!-->
-	<div class="ds-thread" data-thread-key="/blog/20141020/shi-yong-octopressda-jian-ji-yu-github-pagesge-ren-bo-ke-de-xiang-xi-guo-cheng-ji-yuan-li-fen-xi" data-title="使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析" data-url="http://matrixzk.github.io/blog/20141020/shi-yong-octopressda-jian-ji-yu-github-pagesge-ren-bo-ke-de-xiang-xi-guo-cheng-ji-yuan-li-fen-xi/"></div>
+	<div class="ds-thread" data-thread-key="/blog/20141020/octopress-setup-and-analysis" data-title="使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析" data-url="http://matrixzk.github.io/blog/20141020/octopress-setup-and-analysis/"></div>
 <!-- 多说评论框 end -->
 <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
 <script type="text/javascript">
@@ -503,7 +508,7 @@ var duoshuoQuery = {short_name:"matrixzk"};
 	(function() {
 		var ds = document.createElement('script');
 		ds.type = 'text/javascript';ds.async = true;
-		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.unstable.js';
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
 		ds.charset = 'UTF-8';
 		(document.getElementsByTagName('head')[0] 
 		 || document.getElementsByTagName('body')[0]).appendChild(ds);
@@ -522,15 +527,19 @@ var duoshuoQuery = {short_name:"matrixzk"};
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/20141029/ios8-day-by-day-day-2-sha-kuo-zhan/">iOS8 Day-by-Day :: Day 2 :: Sharing 扩展</a>
+        <a href="/blog/20141104/git-flow-model/">一个完美的Git分支管理模型(Git工作流)</a>
       </li>
     
       <li class="post">
-        <a href="/blog/20141028/ios8-day-by-day-day1-swiftgai-shu/">iOS8 Day-by-Day :: Day1 :: Swift概述</a>
+        <a href="/blog/20141103/octopress-custom-config/">Octopress 主题修改小记</a>
       </li>
     
       <li class="post">
-        <a href="/blog/20141020/shi-yong-octopressda-jian-ji-yu-github-pagesge-ren-bo-ke-de-xiang-xi-guo-cheng-ji-yuan-li-fen-xi/">使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析</a>
+        <a href="/blog/20141028/ios8-day1-swift-overview/">iOS8 Day-by-Day :: Day1 :: Swift概述</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141020/octopress-setup-and-analysis/">使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析</a>
       </li>
     
   </ul>
@@ -539,8 +548,9 @@ var duoshuoQuery = {short_name:"matrixzk"};
   <br/>
   <h1>分类目录</h1>
   <ul id="categories">
-    <li class='category'><a href='/blog/categories/ios/'>ios (1)</a></li>
-<li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (2)</a></li>
+    <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
+<li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
+<li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
 
   </ul>
 </section>
@@ -572,5 +582,12 @@ var duoshuoQuery = {short_name:"matrixzk"};
 
 
 
+  <!--返回顶部开始-->
+<div id="full" style="width:0px; height:0px; position:fixed; right:60px; bottom:60px; z-index:100; text-align:right; background-color:transparent; cursor:pointer;">
+        <a href="#" onclick="goTop();return false;"><img src="/images/top.png" border=0 alt="返回顶部"></a>
+</div>
+<script src="/javascripts/goTop.js" type="text/javascript"></script>
+<!--返回顶部结束-->
 </body>
 </html>
+

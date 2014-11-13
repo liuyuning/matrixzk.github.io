@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Matrixzk</title>
+  <title>Matrixzk&#8217;s Blog</title>
   <meta name="author" content="matrixzk">
 
   
-  <meta name="description" content="本文译自 : iOS8 Day-by-Day :: Day 2 :: Sharing Extension 简介 创建一个分享扩展(Share Extention) 编译，运行和调试 指定可被分享的内容 验证(Validating)用户输入 在扩展内部上传 提取一张图片并上传 执行后台上传 总结 &hellip;">
+  <meta name="description" content="众所周知，Git是目前最优秀的版本控制工具。但很多团队在使用Git进行协作开发的过程中，并没有形成一个清晰规范的流程。本文的作者Vincent Driessen向我们介绍了一个相对比较完美的分支管理策略，依照这个策略基本可以保证团队开发和版本发布有条不紊得进行。Vincent &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -21,7 +21,7 @@
   <link rel="canonical" href="http://matrixzk.github.io">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
-  <link href="/atom.xml" rel="alternate" title="Matrixzk" type="application/atom+xml">
+  <link href="/atom.xml" rel="alternate" title="Matrixzk's Blog" type="application/atom+xml">
   <script src="/javascripts/modernizr-2.0.js"></script>
   <!--
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
@@ -56,7 +56,7 @@
 
 <body   >
   <header role="banner"><hgroup>
-  <h1><a href="/">Matrixzk</a></h1>
+  <h1><a href="/">Matrixzk&#8217;s Blog</a></h1>
   
     <h2>Do more do better.</h2>
   
@@ -68,16 +68,12 @@
   
 </ul>
   
-<form action="http://bing.com/" method="get">
-  <fieldset role="search">
-    <input type="hidden" name="q" value="site:matrixzk.github.io" />
-    <input class="search" type="text" name="q" results="0" placeholder="搜索"/>
-  </fieldset>
-</form>
-  
 <ul class="main-navigation">
   <li><a href="/">首页</a></li>
+  <li><font color=#f2f2f2>|</font></li>
   <li><a href="/blog/archives">所有文章</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/about/about.html">关于我</a></li>
 </ul>
 
 </nav>
@@ -91,46 +87,33 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/20141029/ios8-day-by-day-day-2-sha-kuo-zhan/">iOS8 Day-by-Day :: Day 2 :: Sharing 扩展</a></h1>
+      <h1 class="entry-title"><a href="/blog/20141104/git-flow-model/">一个完美的Git分支管理模型(Git工作流)</a></h1>
     
     
       <p class="meta">
         
+<!-- post.date_time_html -->
 
 
 
+<!--
 
-<time class='entry-date' datetime='2014-10-29T19:16:20+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>7:16 pm</span></time>
+
+<!-->
+Nov 4th, 2014
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>本文译自 : <a href="http://www.shinobicontrols.com/blog/posts/2014/07/21/ios8-day-by-day-day-2-sharing-extension">iOS8 Day-by-Day :: Day 2 :: Sharing Extension</a></p>
-
-<ul id="markdown-toc">
-  <li><a href="#section">简介</a></li>
-  <li><a href="#share-extention">创建一个分享扩展(Share Extention)</a></li>
-  <li><a href="#section-1">编译，运行和调试</a></li>
-  <li><a href="#section-2">指定可被分享的内容</a></li>
-  <li><a href="#validating">验证(Validating)用户输入</a></li>
-  <li><a href="#section-3">在扩展内部上传</a></li>
-  <li><a href="#section-4">提取一张图片并上传</a></li>
-  <li><a href="#section-5">执行后台上传</a></li>
-  <li><a href="#section-6">总结</a></li>
-</ul>
-
-<h2 id="section">简介</h2>
-
-<p>iOS8的一个<strong>重大</strong>新特色是引入了对扩展(<code>Extention</code>)的支持。通过它，开发者可以使用自己的功能和特色来增强操作系统的功能，包括第三方应用和苹果自家内置的应用。
-有如下6种扩展可适用于iOS：</p>
+  <div class="entry-content"><p>众所周知，<a href="http://git-scm.com/">Git</a>是目前最优秀的版本控制工具。但很多团队在使用Git进行协作开发的过程中，并没有形成一个清晰规范的流程。本文的作者<a href="http://nvie.com/">Vincent Driessen</a>向我们介绍了一个相对比较完美的分支管理策略，依照这个策略基本可以保证团队开发和版本发布有条不紊得进行。Vincent Driessen还据此实现了一个Git扩展集<a href="https://github.com/nvie/gitflow">git-flow</a>，它为本文所介绍的分支管理模型提供了一些较高层次的<code>repository operations</code>(库操作)。其本质是对下文所述的相关Git命令集进行进一步封装，并提供一些友好的命令行提示，具体可参考<a href="http://danielkummer.github.io/git-flow-cheatsheet/index.zh_CN.html">git-flow备忘清单</a>。本文译自<a href="http://nvie.com/posts/a-successful-git-branching-model/">A successful Git branching model</a>，推荐原汁原味的阅读。</p>
 
 </div>
   
   
     <footer>
-      <a rel="full-article" href="/blog/20141029/ios8-day-by-day-day-2-sha-kuo-zhan/">阅读全文 &rarr;</a>
+      <a rel="full-article" href="/blog/20141104/git-flow-model/">阅读全文 &rarr;</a>
     </footer>
   
 
@@ -142,16 +125,57 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/20141028/ios8-day-by-day-day1-swiftgai-shu/">iOS8 Day-by-Day :: Day1 :: Swift概述</a></h1>
+      <h1 class="entry-title"><a href="/blog/20141103/octopress-custom-config/">Octopress 主题修改小记</a></h1>
     
     
       <p class="meta">
         
+<!-- post.date_time_html -->
 
 
 
+<!--
 
-<time class='entry-date' datetime='2014-10-28T20:38:03+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>8:38 pm</span></time>
+
+<!-->
+Nov 3rd, 2014
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>博客搭建起来后，总感觉默认的classic主题有些呆板，而且字体太大，阅读体验不是很好。于是就尝试着更改下主题。把Octopress的<strong><a href="https://github.com/imathis/octopress/wiki/3rd-Party-Octopress-Themes">推荐主题</a></strong>浏览了一遍后发现<a href="https://github.com/shashankmehta/greyshade">Greyshade</a>的效果还不错。但是安装后发现该主题有些细节还是不尽如人意，比如字体大小、行高、代码高亮背景，等等。经过一番调试后总算基本满意了，但是用移动设备打开后，顿时碎了。它的样式对移动设备真是差劲，比如代码高亮字体大小不一、左右滑动后右边有一条不窄的黑边并且消不去、左侧边栏在ipad上不能很好的适应，等等等等。相比之下Octopress的默认主题对移动设备的支持就要好太多，几乎完美，而且由于样式不花哨，很好的突出了内容主体。也许这就是这个主题的设计初衷吧，以内容为主体，淡化样式。对于博客来说，阅读体验才是重中之重，而且在这个移动互联网的时代，对移动设备的支持也必须到位。出于以上考虑，我又换回了默认的classic主题，但决定对其进行个性化改造。
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/20141103/octopress-custom-config/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/20141028/ios8-day1-swift-overview/">iOS8 Day-by-Day :: Day1 :: Swift概述</a></h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Oct 28th, 2014
         
       </p>
     
@@ -180,7 +204,7 @@
   
   
     <footer>
-      <a rel="full-article" href="/blog/20141028/ios8-day-by-day-day1-swiftgai-shu/">阅读全文 &rarr;</a>
+      <a rel="full-article" href="/blog/20141028/ios8-day1-swift-overview/">阅读全文 &rarr;</a>
     </footer>
   
 
@@ -192,23 +216,27 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/20141020/shi-yong-octopressda-jian-ji-yu-github-pagesge-ren-bo-ke-de-xiang-xi-guo-cheng-ji-yuan-li-fen-xi/">使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析</a></h1>
+      <h1 class="entry-title"><a href="/blog/20141020/octopress-setup-and-analysis/">使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析</a></h1>
     
     
       <p class="meta">
         
+<!-- post.date_time_html -->
 
 
 
+<!--
 
-<time class='entry-date' datetime='2014-10-20T21:55:36+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:55 pm</span></time>
+
+<!-->
+Oct 20th, 2014
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>前两天图省事，让一位梦想通过博客改变世界的<a href="http://droidyue.com/">小伙伴</a>帮我搭建了一个基于<a href="https://pages.github.com/">Github Pages</a>的个人博客，使用的是<a href="http://octopress.org/">Octopress</a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据<code>octopress</code>的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
+  <div class="entry-content"><p>前两天图省事，让一位梦想通过博客改变世界的<strong><a href="http://droidyue.com/">小伙伴</a></strong>帮我搭建了一个基于<a href="https://pages.github.com/">Github Pages</a>的个人博客，使用的是<a href="http://octopress.org/">Octopress</a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据<code>octopress</code>的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
 
 <p>PS.以下内容新手可以选择性参考，大神请绕道，谢谢 :]</p>
 
@@ -216,7 +244,7 @@
   
   
     <footer>
-      <a rel="full-article" href="/blog/20141020/shi-yong-octopressda-jian-ji-yu-github-pagesge-ren-bo-ke-de-xiang-xi-guo-cheng-ji-yuan-li-fen-xi/">阅读全文 &rarr;</a>
+      <a rel="full-article" href="/blog/20141020/octopress-setup-and-analysis/">阅读全文 &rarr;</a>
     </footer>
   
 
@@ -236,15 +264,19 @@
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/20141029/ios8-day-by-day-day-2-sha-kuo-zhan/">iOS8 Day-by-Day :: Day 2 :: Sharing 扩展</a>
+        <a href="/blog/20141104/git-flow-model/">一个完美的Git分支管理模型(Git工作流)</a>
       </li>
     
       <li class="post">
-        <a href="/blog/20141028/ios8-day-by-day-day1-swiftgai-shu/">iOS8 Day-by-Day :: Day1 :: Swift概述</a>
+        <a href="/blog/20141103/octopress-custom-config/">Octopress 主题修改小记</a>
       </li>
     
       <li class="post">
-        <a href="/blog/20141020/shi-yong-octopressda-jian-ji-yu-github-pagesge-ren-bo-ke-de-xiang-xi-guo-cheng-ji-yuan-li-fen-xi/">使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析</a>
+        <a href="/blog/20141028/ios8-day1-swift-overview/">iOS8 Day-by-Day :: Day1 :: Swift概述</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141020/octopress-setup-and-analysis/">使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析</a>
       </li>
     
   </ul>
@@ -253,8 +285,9 @@
   <br/>
   <h1>分类目录</h1>
   <ul id="categories">
-    <li class='category'><a href='/blog/categories/ios/'>ios (1)</a></li>
-<li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (2)</a></li>
+    <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
+<li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
+<li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
 
   </ul>
 </section>
@@ -285,5 +318,12 @@
 
 
 
+  <!--返回顶部开始-->
+<div id="full" style="width:0px; height:0px; position:fixed; right:60px; bottom:60px; z-index:100; text-align:right; background-color:transparent; cursor:pointer;">
+        <a href="#" onclick="goTop();return false;"><img src="/images/top.png" border=0 alt="返回顶部"></a>
+</div>
+<script src="/javascripts/goTop.js" type="text/javascript"></script>
+<!--返回顶部结束-->
 </body>
 </html>
+
