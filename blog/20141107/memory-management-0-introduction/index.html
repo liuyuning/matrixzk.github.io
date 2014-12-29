@@ -1,0 +1,338 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>OC内存管理那些事儿(0)：关于内存管理 - Matrixzk&#8217;s Blog</title>
+  <meta name="author" content="matrixzk">
+
+  
+  <meta name="description" content="不论哪门编程语言，内存管理都一直是一个广受关注的问题，包括有垃圾回收机制的 Java (前几天还听几个搞 Android 的小伙伴在热切的讨论 Java 中的内存管理)。作为有节操的 iOS 开发者，大家对内存管理问题更是时刻保持着高度的使命感。这两年新开的项目可能都已经使用 ARC ( &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://matrixzk.github.io/blog/20141107/memory-management-0-introduction">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Matrixzk's Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <!--
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <!-->
+  <script src="//ajax.useso.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<!--
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<!-->
+
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-56261327-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Matrixzk&#8217;s Blog</a></h1>
+  
+    <h2>Do more do better.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="订阅RSS">RSS</a></li>
+  
+</ul>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/about/about.html">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">OC内存管理那些事儿(0)：关于内存管理</h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Nov 7th, 2014
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>不论哪门编程语言，内存管理都一直是一个广受关注的问题，包括有垃圾回收机制的 Java (前几天还听几个搞 Android 的小伙伴在热切的讨论 Java 中的内存管理)。作为有节操的 iOS 开发者，大家对内存管理问题更是时刻保持着高度的使命感。这两年新开的项目可能都已经使用 <code>ARC</code> ( Automatic Reference Counting )了。想想自己刚从 <code>MRR</code> ( manual retain-release ) 往 <code>ARC</code> 过渡那会儿，虽然苹果官方一再强调可以放心得使用 <code>ARC</code>，但由于在 <code>ARR</code> 下谨慎惯了，一时还是不太敢放心的把内存管理全都交给编译器去做。现在再看 <code>ARC</code>，确实是个可以放心托付的家伙，而且它在编译器级对内存管理做了更进一步的优化。其实当苹果在 Xcode 中内置了强大的静态分析器( Clang Static Analyzer )时我就想，既然内存泄漏隐患都能在编译阶段这么精准得定位到，为什么不更进一步直接把它们解决了呢。后来果然不久苹果就推出了强大的 <code>ARC</code> 机制，直接帮开发者把内存管理的事儿给做了，真是家强大的公司。虽然在 <code>ARC</code> 下不用太过多的关注内存管理问题，但是对 OC 的内存管理机制有一个深刻的理解还是非常有必要的，而且有时你也可能不得不去维护由于历史原因还在使用 <code>MRR</code> 的项目。<!-- more -->今天再看官方文档<a href="https://developer.apple.com/library/ios/documentation/cocoa/conceptual/memorymgmt/Articles/MemoryMgmt.html#//apple_ref/doc/uid/10000011-SW1"> Advanced Memory Management Programming Guide </a>时，依然感觉很精练，故决定将它翻译一下。</p>
+
+<!--
+另外还准备翻译以下两篇来组成一个关于OC内存管理的系列：
+
+* [Transitioning to ARC Release Notes](https://developer.apple.com/library/ios/releasenotes/ObjectiveC/RN-TransitioningToARC/Introduction/Introduction.html)
+* [Memory Management Programming Guide for Core Foundation](https://developer.apple.com/library/ios/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/CFMemoryMgmt.html#//apple_ref/doc/uid/10000127-SW1)
+<!-->
+
+<p>PS. 在苹果的助推下，开发者很快的从 MRR 过渡到了 ARC，包括一些固执的老程序员，这让人不禁猜测，swift 是不是也会在苹果官方的助推下，在一两年内实现从 OC 到 swift 的全面转换呢？让我们拭目以待。</p>
+
+<ul id="markdown-toc">
+  <li><a href="#section">概述</a></li>
+  <li><a href="#section-1">防止内存泄漏的最佳实践</a></li>
+  <li><a href="#section-2">使用分析工具调试内存问题</a></li>
+</ul>
+
+<h2 id="section">概述</h2>
+
+<p>应用程序的内存管理是这样一个过程：在程序运行时分配内存，使用它，然后在不需要它时将其释放。一支优秀的程序通常会尽量少得使用内存。在 Objective-C 中，它也可被看做是在很多块数据和代码之间，为有限的内存资源分配使用权的一种方式。读完这个系列之后你将会了解到，要想控制好应用的内存使用，就需要精确得管理对象的生命周期，并在不再需要它们时将其释放掉。</p>
+
+<p>虽然内存管理通常只针对单个对象，但是应该把管理<code>object graphs</code>作为目标。要确保已不再需要的对象所占的内存都被全部释放。</p>
+
+<p><img class="center" src="/images/blog/20141107_memory_management_2x.png" width="600" title="memory_management" /></p>
+
+<p>Objective-C 提供了两种管理内存的方式：</p>
+
+<ol>
+  <li>
+    <p>第一种方式在本系列中被称为<code>manual retain-release</code>，或者称为 <strong>MRR</strong>，你需要监控所创建的对象来精确地管理内存。这是通过由 Foundation 的<code>NSObject</code>类结合运行时环境所提供的引用计数( reference counting )模型来实现的。</p>
+  </li>
+  <li>
+    <p>第二种方式被称为自动引用计数，即 <strong>ARC</strong> ( Automatic Reference Counting )，使用和 MRR 一样的引用计数的方式，但不同的是该方式会在<strong>编译时期</strong>为你在适当的位置插入相应的内存管理方法调用。强烈建议在新的项目中开始使用 ARC。如果使用 ARC，可以说就不需要去理解即将介绍的有关 MRR 的知识了，但友情提示下，这些知识在某些情况下依然是需要的。更多关于 ARC 的内容，请参阅<a href="https://developer.apple.com/library/ios/releasenotes/ObjectiveC/RN-TransitioningToARC/Introduction/Introduction.html"> Transitioning to ARC Release Notes </a>。</p>
+  </li>
+</ol>
+
+<h2 id="section-1">防止内存泄漏的最佳实践</h2>
+
+<p>不当的内存管理会导致两类问题：</p>
+
+<ul>
+  <li>
+    <p>释放或覆盖了仍在使用的数据
+<br />这会引起内存污染( memory corruption )，通常会导致应用 crash，或者更糟，覆盖掉用户数据。</p>
+  </li>
+  <li>
+    <p>没有释放掉已不再使用的数据，导致内存泄漏( memory leak )
+<br />内存泄漏是指被分配的内存已不再使用了，却没被释放掉。内存泄漏会使应用所占用的内存持续增加，从而导致糟糕的系统性能，或者应用直接被系统干掉。</p>
+  </li>
+</ul>
+
+<p>站在引用计数的角度去考虑内存管理问题，常常事与愿违，因为这样往往更倾向于根据实现细节去考虑内存管理问题，而不是根据实际目标。应该站在对象持有者和<code>object graphs</code>的角度去考虑内存管理问题。</p>
+
+<p>Cocoa 采用了一套明确的命名约定，来表明你当前是否拥有通过某方法所返回对象的所有权。详情参阅 <a href="/blog/20141109/memory-management-1-policy/">内存管理策略</a> ( 原文：<a href="https://developer.apple.com/library/ios/documentation/cocoa/conceptual/memorymgmt/Articles/mmRules.html#//apple_ref/doc/uid/20000994-BAJHFBGH"> Memory Management Policy </a>)。</p>
+
+<p>虽然基本的策略很简单，但仍有一些实用的套路可使内存管理更加简单，而且能帮助确保在最大限度得减少程序资源需求的同时，程序依然能够可靠健壮得运行。详情参阅 <a href="/blog/20141111/memory-management-2-practical/">内存管理实践</a> ( 原文：<a href="https://developer.apple.com/library/ios/documentation/cocoa/conceptual/memorymgmt/Articles/mmPractical.html#//apple_ref/doc/uid/TP40004447-SW1"> Practical Memory Management </a>)。</p>
+
+<p>自动释放池块( Autorelease Pool Blocks )提供了一个可以延迟给对象发送release消息的机制。它的使用场景是，当想要放弃某对象的所有权，但又想避免它被直接释放掉(比如在要从某方法返回一个对象时)。详情参阅 <a href="/blog/20141113/memory-management-3-autoreleasePool/">使用自动释放池块</a> ( 原文：<a href="https://developer.apple.com/library/ios/documentation/cocoa/conceptual/memorymgmt/Articles/mmAutoreleasePools.html#//apple_ref/doc/uid/20000047-CJBFBEDI"> Using Autorelease Pool Blocks </a>)。</p>
+
+<h2 id="section-2">使用分析工具调试内存问题</h2>
+
+<p>使用 Xcode 内置的 Clang Static Analyzer (静态分析器)，可以在编译时期找出代码所存在的内存问题。</p>
+
+<p>如果内存问题仍然出现，还有一些其他的工具和技巧能确定和诊断问题所在。</p>
+
+<ul>
+  <li>
+    <p>在 <strong>Technical Note TN2239</strong> 和<a href="https://developer.apple.com/library/ios/technotes/tn2239/_index.html#//apple_ref/doc/uid/DTS40010638"> iOS Debugging Magic </a>中介绍了很多与这些工具和技巧相关的内容，特别是<code>NSZombie</code>的使用，都能很好得帮忙定位到过度释放( over-released )的对象。</p>
+  </li>
+  <li>
+    <p>使用 <strong>Instruments</strong> 来追踪引用计数事件，查找内存泄漏。详情参阅<a href="https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/InstrumentsUserGuide/Introduction/Introduction.html#//apple_ref/doc/uid/TP40004652"> Instruments User Guide </a>中的<a href="https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/InstrumentsUserGuide/GatheringDatafortheFirstTime/GatheringDatafortheFirstTime.html#//apple_ref/doc/uid/TP40004652-CH5"> Collecting Data on Your App </a>章节。</p>
+  </li>
+</ul>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<!--
+<span class="byline author vcard">Posted by <span class="fn">matrixzk</span></span>
+<!-->
+
+<span class="byline author vcard"><span class="fn">matrixzk •
+      
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Nov 7th, 2014 •
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/20141104/git-flow-model/" title="Previous Post: 一个完美的 Git 分支管理模型 (Git工作流)">&larr; 一个完美的 Git 分支管理模型 (Git工作流)</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/20141109/memory-management-1-policy/" title="Next Post: OC内存管理那些事儿(1)：内存管理策略">OC内存管理那些事儿(1)：内存管理策略 &rarr;</a>
+        <!-- &raquo; -->
+      
+    </p>
+  </footer>
+</article>
+<!--
+
+<!-->
+
+
+  <section>
+   <!-- 多说评论框 start -->
+<!--
+	<div class="ds-thread" data-thread-key="请将此处替换成文章在你的站点中的ID" data-title="请替换成文章的标题" data-url="请替换成文章的网址"></div>
+<!-->
+	<div class="ds-thread" data-thread-key="/blog/20141107/memory-management-0-introduction" data-title="OC内存管理那些事儿(0)：关于内存管理" data-url="http://matrixzk.github.io/blog/20141107/memory-management-0-introduction/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"matrixzk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+  </section>
+ 
+  
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最新文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/20141113/memory-management-3-autoreleasePool/">OC内存管理那些事儿(3)：使用自动释放池块</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141111/memory-management-2-practical/">OC内存管理那些事儿(2)：内存管理实践</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141109/memory-management-1-policy/">OC内存管理那些事儿(1)：内存管理策略</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141107/memory-management-0-introduction/">OC内存管理那些事儿(0)：关于内存管理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141104/git-flow-model/">一个完美的 Git 分支管理模型 (Git工作流)</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+  <br/>
+  <h1>分类目录</h1>
+  <ul id="categories">
+    <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
+<li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
+<li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
+<li class='category'><a href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理 (4)</a></li>
+
+  </ul>
+</section>
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - matrixzk -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+  <!--返回顶部开始-->
+<div id="full" style="width:0px; height:0px; position:fixed; right:60px; bottom:60px; z-index:100; text-align:right; background-color:transparent; cursor:pointer;">
+        <a href="#" onclick="goTop();return false;"><img src="/images/top.png" border=0 alt="返回顶部"></a>
+</div>
+<script src="/javascripts/goTop.js" type="text/javascript"></script>
+<!--返回顶部结束-->
+</body>
+</html>
+

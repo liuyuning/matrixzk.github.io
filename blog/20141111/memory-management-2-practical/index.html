@@ -1,0 +1,571 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>OC内存管理那些事儿(2)：内存管理实践 - Matrixzk&#8217;s Blog</title>
+  <meta name="author" content="matrixzk">
+
+  
+  <meta name="description" content="虽然上篇文章中所介绍的基本概念简单明了，但仍有一些实用的套路可使内存管理更加简单，而且能帮忙确保在最大限度得减少资源需求的同时，程序依然能够可靠健壮得运行。 使用存取器方法让内存管理变得更加简单 使用存取器方法给属性赋值 不要在初始化( Initializer )方法和 dealloc &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://matrixzk.github.io/blog/20141111/memory-management-2-practical">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Matrixzk's Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <!--
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <!-->
+  <script src="//ajax.useso.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<!--
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<!-->
+
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-56261327-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Matrixzk&#8217;s Blog</a></h1>
+  
+    <h2>Do more do better.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="订阅RSS">RSS</a></li>
+  
+</ul>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/about/about.html">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">OC内存管理那些事儿(2)：内存管理实践</h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Nov 11th, 2014
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>虽然<a href="/blog/20141109/memory-management-1-policy/"><strong>上篇文章</strong></a>中所介绍的基本概念简单明了，但仍有一些实用的套路可使内存管理更加简单，而且能帮忙确保在最大限度得减少资源需求的同时，程序依然能够可靠健壮得运行。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#section">使用存取器方法让内存管理变得更加简单</a>    <ul>
+      <li><a href="#section-1">使用存取器方法给属性赋值</a></li>
+      <li><a href="#initializer--dealloc-">不要在初始化( Initializer )方法和 dealloc 方法中使用存取器方法</a></li>
+    </ul>
+  </li>
+  <li><a href="#section-2">使用弱引用来避免循环引用</a></li>
+  <li><a href="#section-3">要避免对象在使用过程中被释放</a></li>
+  <li><a href="#dealloc-">不要在 dealloc 方法中管理稀缺资源</a></li>
+  <li><a href="#section-4">集合类持有它所包含对象的所有权</a></li>
+  <li><a href="#section-5">所有权策略通过引用计数实现</a></li>
+</ul>
+
+<h2 id="section">使用存取器方法让内存管理变得更加简单</h2>
+
+<p>如果类中有一个对象属性，就必须确保给该对象赋的任何值在使用的过程中都不会被释放掉。因此在给该对象赋值时就要显式得持有它。之后也必须确保释放所有当前所持有的对象。</p>
+
+<p>这些有时看起来可能有些冗余或者形式化，但如果使用存取器方法(<code>accessor method</code>)，在管理内存的过程中出错的几率将会大大降低。如果你的代码中的实例变量到处都是<code>retain</code>和<code>release</code>操作，那几乎可以确定，你已踏上了一条不归路。</p>
+
+<p>思考如下一个<code>Counter</code>类，它有一个<code>count</code>属性：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="k">@interface</span> <span class="nc">Counter</span> : <span class="bp">NSObject</span>
+</span><span class="line"><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">count</span><span class="p">;</span>
+</span><span class="line"><span class="k">@end</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这里的属性(<code>property</code>)声明了两个存取器方法(<code>accessor method</code>)。通常编译器能帮忙自动合成这两个方法，不过，看一下它们具体实现还是有好处的。</p>
+
+<p>在<code>get</code>访问器中，只是返回一个合成的实例变量，所以不需要<code>retain</code>或者<code>release</code>。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="bp">NSNumber</span> <span class="o">*</span><span class="p">)</span><span class="nf">count</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">_count</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>在<code>set</code>方法中，如果别人也按照相同的规则操作<code>count</code>，就不得不假设新的<code>count</code>随时可能被释放掉，所以此时应该持有它，即向它发送一个<code>retain</code>消息，以确保在使用它的过程中不会被释放掉。与此同时，应该给之前的<code>count</code>对象发送<code>release</code>消息以放弃对它的所有权(在 Objective-C 中时允许给<code>nil</code>发送消息的，所以即使<code>_count</code>还没被赋值，这里依然可以正常工作)。即使新旧两个值是同一个对象，也要在<code>[newCount retain]</code>之后给其发送<code>release</code>消息，毕竟你并不想无意中导致它被释放嘛。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setCount:</span><span class="p">(</span><span class="bp">NSNumber</span> <span class="o">*</span><span class="p">)</span><span class="nv">newCount</span> <span class="p">{</span>
+</span><span class="line">    <span class="p">[</span><span class="n">newCount</span> <span class="k">retain</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">_count</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line">    <span class="c1">// Make the new assignment.</span>
+</span><span class="line">    <span class="n">_count</span> <span class="o">=</span> <span class="n">newCount</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h3 id="section-1">使用存取器方法给属性赋值</h3>
+
+<p>假设要实现一个方法来重置<code>count</code>的值，有若干方案。第一种实现是，使用<code>alloc</code>创建一个<code>NSNumber</code>实例，为平衡所有权随后<code>release</code>它。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reset</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">zero</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSNumber</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithInteger</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">self</span> <span class="nl">setCount</span><span class="p">:</span><span class="n">zero</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">zero</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>第二种实现方式，使用<strong>便利构造函数</strong>( convenience constructor )来创建<code>NSNumber</code>对象，因此此时也就不需要<code>retain</code>或者<code>release</code>操作：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reset</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">zero</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSNumber</span> <span class="nl">numberWithInteger</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">self</span> <span class="nl">setCount</span><span class="p">:</span><span class="n">zero</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>注意，这两种方式都使用了<code>set</code>存取器。</p>
+
+<p>接下来的实现方式在简单的场景下也可以正常工作，这里看似避开了存取器方法，但这样做有时几乎肯定会导致出错(比如，当忘记<code>retain</code>或<code>release</code>时，或者改变了该实例变量的内存管理语义(<code>semantics</code>))。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reset</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">zero</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSNumber</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithInteger</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">_count</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line">    <span class="n">_count</span> <span class="o">=</span> <span class="n">zero</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p><strong>注意</strong>，如果使用了 <strong>KVO</strong> (key-value observing，即键值观察)，使用上述方式改变这个变量是不会引起 KVO 响应的。</p>
+
+<h3 id="initializer--dealloc-">不要在初始化( Initializer )方法和 dealloc 方法中使用存取器方法</h3>
+
+<p>初始化( Initializer )方法和<code>dealloc</code>方法，是唯一不该使用存取器方法来给实例变量赋值的地方。使用<code>number</code>对象初始化一个初始值为0的<code>counter</code>对象，可以如下实现<code>init</code>方法：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">init</span> <span class="p">{</span>
+</span><span class="line">    <span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="n">init</span><span class="p">];</span>
+</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">        <span class="n">_count</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSNumber</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithInteger</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>如果想通过一个<code>count</code>参数来初始化<code>counter</code>，可以如下实现一个<code>initWithCount:</code>方法：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">initWithCount:</span><span class="p">(</span><span class="bp">NSNumber</span> <span class="o">*</span><span class="p">)</span><span class="nv">startingCount</span> <span class="p">{</span>
+</span><span class="line">    <span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="n">init</span><span class="p">];</span>
+</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">        <span class="n">_count</span> <span class="o">=</span> <span class="p">[</span><span class="n">startingCount</span> <span class="k">copy</span><span class="p">];</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>由于<code>Counter</code>类有一个对象实例变量，所以它必须实现<code>dealloc</code>方法，在这个方法中给其所有实例变量发送一个<code>release</code>消息来放弃对它们的所有权，并在该方法最后调用父类即<code>super</code>的<code>dealloc</code>方法：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">dealloc</span> <span class="p">{</span>
+</span><span class="line">    <span class="p">[</span><span class="n">_count</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">super</span> <span class="n">dealloc</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="section-2">使用弱引用来避免循环引用</h2>
+
+<p><code>retain</code>一个对象就相当于创建了一个指向它的<strong>强引用</strong>(<code>strong reference</code>)。一个对象只有当它的所有强引用都被 release 后才会被释放掉(<code>deallocated</code>)。因此，这就有可能导致两个对象循环引用的问题，我们把这称为 <strong>retain cycle</strong>，即两个对象对彼此都有一个强引用(可能是两者间直接的强引用，也可能是通过一些其他的对象形成了一个首尾相接的强引用环)。</p>
+
+<p><img class="right" src="/images/blog/20141111_retaincycles_2x.png" width="200" title="retaincycles" /></p>
+
+<p>右图所示的对象关系就有可能导致循环引用。这里的<code>Document</code>对象含有一个<code>Page</code>对象来表示文档的每一页。每个<code>Page</code>对象都保留一个对其所在的文档的引用。如果<code>Document</code>对象有一个指向<code>Page</code>对象的强引用，同时<code>Page</code>对象也有一个指向<code>Document</code>对象的强引用，这样它们两个就永远都不会被释放掉了。直到<code>Page</code>对象被释放后，<code>Document</code>对象的引用计数才会变为0，而<code>Page</code>对象也同样要等<code>Document</code>对象释放后才会被释放。</p>
+
+<p>解决这类循环引用问题的办法是使用弱引用(<code>weak reference</code>)。<strong>弱引用</strong>是指源对象不会持有它所引用的对象的一种无从属的关系。    </p>
+
+<p>然而为了维持<code>object graph</code>的完整性，有些地方必须使用强引用(如果只使用弱引用，右图中的 page 和 paragraph 就没有了持有者，也因此会被释放掉)。源于此，Cocoa 约定，“父”对象应该使用强引用来持有它的“孩子们”(即属性)，而“孩子们”在引用“父”对象时应该使用弱引用。</p>
+
+<p>因此，上图中的<code>document</code>对象有一个指向<code>page</code>对象的强引用(以持有它)，而<code>page</code>对象用一个弱引用来指向<code>document</code>对象(不持有它)。</p>
+
+<p>比如在 Cocoa 中有以下几个地方就使用到了弱引用，tableView 的 data source(数据源)，outlineView 的 item，通知的观察者，以及各种<code>target</code>和<code>delegate</code>。</p>
+
+<p>当给通过弱引用所持有的对象发送消息时要特别小心。给一个已被释放的对象发送消息，会导致应用 crash。必须清楚地知道一个对象何时是无效的。在多数情况下，被弱引用的对象要知道哪些对象弱引用了它，并且负责在它被释放时通知这些对象。
+<font color="blue">
+    比如，当在通知中心( notification center )注册一个对象时，通知中心持有的是这个对象的弱引用，并在相应的通知发出时给它发送消息。当这个对象被释放时，同时应该在通知中心把它注销掉，这样可以防止这之后通知中心再给这个已被释放的对象发送消息。同样的，当一个 delegate 对象被释放时，应该给相应的对象发送一个以 nil 为参数的 setDelegate: 消息，以移除它对该 delegate 的引用。上述这些消息通常在对象的 dealloc 方法中发送。
+</font>
+<br /><strong>译者注：</strong> 当一个对象被释放后，如果没有显式得给它置为<code>nil</code>，它就成了一个野指针，此时再给它发送消息，会导致一个报错为<code>EXC_BAD_ACCESS</code>的 crash。</p>
+
+<h2 id="section-3">要避免对象在使用过程中被释放</h2>
+
+<p>Cocoa 的所有权策略指出，获取来的对象通常应该确保在使用它的方法的整个作用域内都始终有效。同时也要确保可以放心得从当前作用域中返回该对象而不用担心它在某个时刻被释放掉。从<code>getter</code>方法返回的是一个缓存的实例变量还是一个计算得来的值并不重要，重要的是在任何时候用到这个对象时，它都应该是始终有效的。</p>
+
+<p>对于上述规则有一些例外情况，大概可分为如下两类：</p>
+
+<ol>
+  <li>
+    <p>当对象被从基本的集合类中移除时。</p>
+
+    <pre><code> heisenObject = [array objectAtIndex:n];
+ [array removeObjectAtIndex:n];
+ // heisenObject could now be invalid.
+</code></pre>
+
+    <p>当一个对象从基本的集合类中被移除时，它会接收到一个<code>release</code>消息(而不是<code>autorelease</code>)。如果这个集合是该被移除对象的唯一持有者，该对象(此例中的<code>heisenObject</code>)将会立即被释放掉。</p>
+  </li>
+  <li>
+    <p>当一个“父对象”被释放时。</p>
+
+    <pre><code> id parent = &lt;#create a parent object#&gt;;
+ // ...
+ heisenObject = [parent child] ;
+ [parent release]; // Or, for example: self.parent = nil;
+ // heisenObject could now be invalid.
+</code></pre>
+
+    <p>有时通过其他对象获取到一个对象，然后直接或间接得 release 这个父对象。如果 release 后这个父对象被释放掉了，而这个父对象又是该子对象的唯一持有者，那么该子对象(此例中的<code>heisenObject</code>)将会同时被释放掉(假设这里的父对象在其<code>dealloc</code>方法中对其发送的是<code>release</code>而非<code>autorelease</code>消息)。</p>
+  </li>
+</ol>
+
+<p>为了避免这些情况，应该在接收到上边的<code>heisenObject</code>后 retain 它，并负责在你不再使用它时将其 release。例如：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="n">heisenObject</span> <span class="o">=</span> <span class="p">[[</span><span class="n">array</span> <span class="nl">objectAtIndex</span><span class="p">:</span><span class="n">n</span><span class="p">]</span> <span class="k">retain</span><span class="p">];</span>
+</span><span class="line"><span class="p">[</span><span class="n">array</span> <span class="nl">removeObjectAtIndex</span><span class="p">:</span><span class="n">n</span><span class="p">];</span>
+</span><span class="line"><span class="c1">// Use heisenObject...</span>
+</span><span class="line"><span class="p">[</span><span class="n">heisenObject</span> <span class="k">release</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="dealloc-">不要在 dealloc 方法中管理稀缺资源</h2>
+
+<p>通常不应该在<code>dealloc</code>方法中管理稀缺资源( scarce resources )，比如文件描述符( file descriptors )、网络连接和缓冲池( buffers )或缓存( caches )。特别注意，在设计类时不应该想当然得认为<code>dealloc</code>方法会在你认为的时刻被调用。有时由于某个 bug
+或者应用被销毁掉( tear-down )，<code>dealloc</code>的调用可能会被延迟，或者干脆就不会被调用。</p>
+
+<p>如果你的类有一个管理稀缺资源的属性，那么通常应该在你认为不再需要这些资源时，告知这个属性，先让它把这些资源“清理掉”，然后再 release 这个属性，这之后<code>dealloc</code>方法将会被调用。这样做的好处是，即使<code>dealloc</code>方法没被调用也不会引其他问题。</p>
+
+<p>如果试图在<code>dealloc</code>方法顶部进行资源管理的操作，很容易引起问题。比如：</p>
+
+<ol>
+  <li>
+    <p><code>object graph</code>被销毁时的顺序依赖关系</p>
+
+    <p><code>object graph</code>的销毁机制是内在无序的，尽管我们通常期望也确实得到了一个特定的顺序，但这个是不可靠的。例如，如果一个对象被意外得通过 autorelease 而非 release 的方式释放掉了，其 <code>object graph</code> 的销毁顺序就会被改变，并可能导致一些未知的结果。</p>
+  </li>
+  <li>
+    <p>稀缺资源未被回收</p>
+
+    <p>会导致内存泄漏的 bug 必须修复，它们通常不会立刻使程序崩溃。然而，如果稀缺资源没有在希望释放的时候被释放掉，这可能会导致更严重的问题。比如，如果应用耗尽了文件描述符( file descriptor )，用户就不能保存数据了。</p>
+  </li>
+  <li>
+    <p>资源清理的逻辑在错误的线程中执行</p>
+
+    <p>如果对象在一个意外的时间点儿被 autorelease，无论此时它处于哪个线程的自动释放池中，都会被释放掉。这对于那些只能在某一个线程中被访问的资源，很可能是致命的。</p>
+  </li>
+</ol>
+
+<h2 id="section-4">集合类持有它所包含对象的所有权</h2>
+
+<p>当把一个对象添加到一个集合(比如<code>array</code>，<code>dictionary</code>，或<code>set</code>)中时，该集合将持有这个对象。当该对象从这个集合中移除，或者这个集合本身被释放时，这个集合释放该对象。因此，如果想创建一个 number 数组，有如下两种实现方式：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">array</span> <span class="o">=</span> <span class="o">&lt;</span><span class="err">#</span><span class="n">Get</span> <span class="n">a</span> <span class="n">mutable</span> <span class="n">array</span><span class="err">#</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span class="line"><span class="bp">NSUInteger</span> <span class="n">i</span><span class="p">;</span>
+</span><span class="line"><span class="c1">// ...</span>
+</span><span class="line"><span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">convenienceNumber</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSNumber</span> <span class="nl">numberWithInteger</span><span class="p">:</span><span class="n">i</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">array</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">convenienceNumber</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>在这种情况下，由于没有调用 <code>alloc</code>，因此也就不需要调用<code>release</code>。这里不需要<code>retain</code>新创建的 number ( convenienceNumber )，因为数组将会替你做。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">array</span> <span class="o">=</span> <span class="o">&lt;</span><span class="err">#</span><span class="n">Get</span> <span class="n">a</span> <span class="n">mutable</span> <span class="n">array</span><span class="err">#</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span class="line"><span class="bp">NSUInteger</span> <span class="n">i</span><span class="p">;</span>
+</span><span class="line"><span class="c1">// ...</span>
+</span><span class="line"><span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">allocedNumber</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSNumber</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithInteger</span><span class="p">:</span><span class="n">i</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">array</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">allocedNumber</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">allocedNumber</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>在这种情况下，由于 number 是通过 <code>alloc</code> 创建的，所以需要在当前 <code>for</code> 循环的作用域内给其发送 <code>release</code> 消息(来平衡 alloc)。这里不需要<code>retain</code>新创建的 number ( convenienceNumber )，因为数组将会替你做。由于数组在通过<code>addObject:</code>添加 number 时 retain 了它，所以在该数组内它将不会被释放掉。</p>
+
+<p>为了更好的理解上述问题，我们站在集合类实现者的角度来看。为了确保所有你所托管的对象都不会在你这里突然消失掉，就需要在它们传进来时给其发送一个<code>retain</code>消息。当他们被移除时，发送一个对应的<code>release</code>消息，并且当你被释放时，此时所持有的所有对象都应该在你自己的<code>dealloc</code>方法中接收到一个<code>release</code>消息。</p>
+
+<h2 id="section-5">所有权策略通过引用计数实现</h2>
+
+<p>所有权策略是基于引用计数(通常在<code>retain</code>方法之后称之为<code>retain count</code>)实现的。每个对象都有一个引用计数。</p>
+
+<ul>
+  <li>当创建一个对象时，其引用计数为<font color="red">1</font>.</li>
+  <li>当给一个对象发送<code>retain</code>消息时，其引用计数<font color="red">加1</font>.</li>
+  <li>当给一个对象发送<code>release</code>消息时，其引用计数<font color="red">减1</font>.
+<br />当给一个对象发送<code>autorelease</code>消息时，其引用计数将会在该自动释放池结束时<font color="red">减1</font>.</li>
+  <li>当一个对象的引用计数减为<font color="red">0</font>时，它将被释放掉。</li>
+</ul>
+
+<p><strong>重要：</strong> 不要试图让对象给出其当前精确的引用计数。这个结果通常是<font color="red">不准确</font>的，因为可能有你并不知道的 framework 的对象也 retain 了该对象。在调试内存管理问题时，只需要把注意力放在确保你的代码遵从上述所有权规则就行了。</p>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<!--
+<span class="byline author vcard">Posted by <span class="fn">matrixzk</span></span>
+<!-->
+
+<span class="byline author vcard"><span class="fn">matrixzk •
+      
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Nov 11th, 2014 •
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/20141109/memory-management-1-policy/" title="Previous Post: OC内存管理那些事儿(1)：内存管理策略">&larr; OC内存管理那些事儿(1)：内存管理策略</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/20141113/memory-management-3-autoreleasePool/" title="Next Post: OC内存管理那些事儿(3)：使用自动释放池块">OC内存管理那些事儿(3)：使用自动释放池块 &rarr;</a>
+        <!-- &raquo; -->
+      
+    </p>
+  </footer>
+</article>
+<!--
+
+<!-->
+
+
+  <section>
+   <!-- 多说评论框 start -->
+<!--
+	<div class="ds-thread" data-thread-key="请将此处替换成文章在你的站点中的ID" data-title="请替换成文章的标题" data-url="请替换成文章的网址"></div>
+<!-->
+	<div class="ds-thread" data-thread-key="/blog/20141111/memory-management-2-practical" data-title="OC内存管理那些事儿(2)：内存管理实践" data-url="http://matrixzk.github.io/blog/20141111/memory-management-2-practical/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"matrixzk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+  </section>
+ 
+  
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最新文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/20141113/memory-management-3-autoreleasePool/">OC内存管理那些事儿(3)：使用自动释放池块</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141111/memory-management-2-practical/">OC内存管理那些事儿(2)：内存管理实践</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141109/memory-management-1-policy/">OC内存管理那些事儿(1)：内存管理策略</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141107/memory-management-0-introduction/">OC内存管理那些事儿(0)：关于内存管理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141104/git-flow-model/">一个完美的 Git 分支管理模型 (Git工作流)</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+  <br/>
+  <h1>分类目录</h1>
+  <ul id="categories">
+    <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
+<li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
+<li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
+<li class='category'><a href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理 (4)</a></li>
+
+  </ul>
+</section>
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - matrixzk -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+  <!--返回顶部开始-->
+<div id="full" style="width:0px; height:0px; position:fixed; right:60px; bottom:60px; z-index:100; text-align:right; background-color:transparent; cursor:pointer;">
+        <a href="#" onclick="goTop();return false;"><img src="/images/top.png" border=0 alt="返回顶部"></a>
+</div>
+<script src="/javascripts/goTop.js" type="text/javascript"></script>
+<!--返回顶部结束-->
+</body>
+</html>
+

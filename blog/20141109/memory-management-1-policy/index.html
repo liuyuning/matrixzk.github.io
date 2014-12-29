@@ -1,0 +1,452 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>OC内存管理那些事儿(1)：内存管理策略 - Matrixzk&#8217;s Blog</title>
+  <meta name="author" content="matrixzk">
+
+  
+  <meta name="description" content="在引用计数环境下用于内存管理的基本模型，是由 NSObject protocol中所定义的一些方法，结合一套标准的方法命名约定共同提供的。NSObject 类还定义了一个dealloc方法，该方法会在对象被释放时自动调用。本文将讲解在 Cocoa 编程中所需了解的关于正确进行内存管理的基本规则， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://matrixzk.github.io/blog/20141109/memory-management-1-policy">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Matrixzk's Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <!--
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <!-->
+  <script src="//ajax.useso.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<!--
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<!-->
+
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-56261327-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Matrixzk&#8217;s Blog</a></h1>
+  
+    <h2>Do more do better.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="订阅RSS">RSS</a></li>
+  
+</ul>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/about/about.html">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">OC内存管理那些事儿(1)：内存管理策略</h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Nov 9th, 2014
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>在引用计数环境下用于内存管理的基本模型，是由 <strong>NSObject</strong> <code>protocol</code>中所定义的一些方法，结合一套标准的方法命名约定共同提供的。<strong>NSObject</strong> 类还定义了一个<code>dealloc</code>方法，该方法会在对象被释放时自动调用。本文将讲解在 Cocoa 编程中所需了解的关于正确进行内存管理的基本规则，并提供一些正确用法的示例。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#section">内存管理的基本规则</a>    <ul>
+      <li><a href="#section-1">一个简单的例子</a></li>
+      <li><a href="#autorelease--release-">使用 autorelease 延迟发送 release 消息</a></li>
+      <li><a href="#reference">你不具有通过引用(<code>reference</code>)返回的对象的所有权</a></li>
+    </ul>
+  </li>
+  <li><a href="#dealloc-">实现 dealloc 方法以释放所持有的对象</a></li>
+  <li><a href="#core-foundation-">Core Foundation 使用类似的规则</a></li>
+</ul>
+
+<h2 id="section">内存管理的基本规则</h2>
+
+<p>对象管理模型基于对象所有权。每个对象都有一或多个持有者(<code>owner</code>)。只要某对象还有一个持有者，它就不会被释放掉。如果一个对象没有了持有者，运行时系统(<code>runtime system</code>)就会自动将其销毁掉。为了确保让你清晰地意识到何时持有了一个对象，Cocoa 采用了如下策略：</p>
+
+<ul>
+  <li>
+    <p><strong>只要是你创建的对象，你就拥有其所有权</strong>
+<br />使用名字以<code>alloc</code>, <code>new</code>, <code>copy</code> 或者 <code>mutableCopy</code> 开头的方法所创建对象(比如,<code>alloc</code>, <code>newObject</code>, 或者<code>mutableCopy</code>)。</p>
+  </li>
+  <li>
+    <p><strong>使用<code>retain</code>来获取对象的所有权</strong>
+<br />一个获取到的对象通常要确保它在被接收的方法内是始终有效的，并且该方法也要确保安全得将该对象返回给它的调用者。使用<code>retain</code>有如下两个场景：
+<br />(1) 在存取器(<code>accessor</code>)方法或<code>init</code>方法的实现中，拿到一个想要存储为属性值的对象的所有权；
+<br />(2) 防止一个对象因其他操作的副作用而变成无效的(就像在<a href="/blog/20141111/memory-management-2-practical/#section-3"> 要避免对象在使用过程中被释放 </a>中所阐述的那样)。</p>
+  </li>
+  <li>
+    <p><strong>当不再需要一个对象时，必须要放弃对它的所有权</strong>
+<br />通过给一个对象发送<code>release</code>消息或者<code>autorelease</code>消息来放弃持有它。在 Cocoa 的惯用语中，放弃对一个对象的所有权通常被称为释放(release)一个对象。</p>
+  </li>
+  <li>
+    <p><strong>如果不是某对象的持有者，不要执行放弃其所有权的操作</strong>
+<br />这只是前边几条策略规则的一个推论，在这里明确阐述下。</p>
+  </li>
+</ul>
+
+<h3 id="section-1">一个简单的例子</h3>
+
+<p>为了举例说明上述策略，思考如下代码片段：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="n">Person</span> <span class="o">*</span><span class="n">aPerson</span> <span class="o">=</span> <span class="p">[[</span><span class="n">Person</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class="line">    <span class="c1">// ...</span>
+</span><span class="line">    <span class="bp">NSString</span> <span class="o">*</span><span class="n">name</span> <span class="o">=</span> <span class="n">aPerson</span><span class="p">.</span><span class="n">fullName</span><span class="p">;</span>
+</span><span class="line">    <span class="c1">// ...</span>
+</span><span class="line">    <span class="p">[</span><span class="n">aPerson</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>对象<code>Person</code>是由<code>alloc</code>方法创建的，所以随后在不再需要它时向它发送了<code>release</code>消息。这里的<code>name</code>不是通过附带所有权的方法(<code>the owning methods</code>)取到的，所以不必向其发送<code>release</code>消息。值得注意的是，本例中使用了<code>release</code>而不是<code>autorelease</code>。</p>
+
+<h3 id="autorelease--release-">使用 autorelease 延迟发送 release 消息</h3>
+
+<p>当需要延迟发送<code>release</code>消息时，使用<code>autorelease</code>，特别是在要从一个方法中返回一个对象时。比如，可以像这样实现上例中的<code>fullName</code>方法：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">fullName</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[[[</span><span class="bp">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFormat</span><span class="p">:</span><span class="s">@&quot;%@ %@&quot;</span><span class="p">,</span>
+</span><span class="line">                                          <span class="nb">self</span><span class="p">.</span><span class="n">firstName</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">lastName</span><span class="p">]</span> <span class="n">autorelease</span><span class="p">];</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">string</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>你将持有这里返回的通过<code>alloc</code>创建的<code>string</code>。按照内存管理的规则，在你丢掉对<code>string</code>的引用之前，必须先放弃对它的所有权。然而，这里如果使用<code>release</code>，<code>string</code>将会在被返回前就被释放掉(该方法将返回一个无效的对象)。使用<code>autorelease</code>，表示你想要放弃其所有权，但允许该方法的调用者在这里返回的<code>string</code>被释放前使用它。</p>
+
+<p><code>fullName</code>方法的实现也可以像这样：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">fullName</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;%@ %@&quot;</span><span class="p">,</span>
+</span><span class="line">                                 <span class="nb">self</span><span class="p">.</span><span class="n">firstName</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">lastName</span><span class="p">];</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">string</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>根据上述的基本规则，这里你会持有通过<code>stringWithFormat:</code>返回的<code>string</code>，所以可以放心得从该方法中返回<code>string</code>。</p>
+
+<p>作为对比，如下实现是<font color="red">错误</font>的：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">fullName</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFormat</span><span class="p">:</span><span class="s">@&quot;%@ %@&quot;</span><span class="p">,</span>
+</span><span class="line">                                         <span class="nb">self</span><span class="p">.</span><span class="n">firstName</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">lastName</span><span class="p">];</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">string</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>依据上述命名约定，<code>fullName</code>方法的调用者并不认为自己持有了这里所返回的<code>string</code>，因此它也就没有理由释放所返回的<code>string</code>，于是，这里就导致了内存泄漏。</p>
+
+<h3 id="reference">你不具有通过引用(<code>reference</code>)返回的对象的所有权</h3>
+
+<p>Cocoa 中的某些方法会指定通过引用(<code>reference</code>)返回一个对象(也就是说，它们接受一个<code> ClassName **</code>或<code>id *</code>类型的参数)。一个常见的例子是，使用<code>NSError</code>对象来包含某个可能出现的 error 的相关信息。比如，<code>initWithContentsOfURL:options:error:</code> (NSData) 和 <code>initWithContentsOfFile:encoding:error:</code> (NSString)。</p>
+
+<p>前边所述的规则同样适用于这种情况。当调用上述方法时，由于你并没有创建<code>NSError</code>对象，也就不具有其所有权，因此也就没义务释放它，就像这个例子：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="bp">NSString</span> <span class="o">*</span><span class="n">fileName</span> <span class="o">=</span> <span class="o">&lt;</span><span class="err">#</span><span class="n">Get</span> <span class="n">a</span> <span class="n">file</span> <span class="n">name</span><span class="err">#</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span class="line"><span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">;</span>
+</span><span class="line"><span class="bp">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithContentsOfFile</span><span class="p">:</span><span class="n">fileName</span>
+</span><span class="line">                        <span class="nl">encoding</span><span class="p">:</span><span class="n">NSUTF8StringEncoding</span> <span class="nl">error</span><span class="p">:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class="line"><span class="k">if</span> <span class="p">(</span><span class="n">string</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="c1">// Deal with error...</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line"><span class="c1">// ...</span>
+</span><span class="line"><span class="p">[</span><span class="n">string</span> <span class="k">release</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="dealloc-">实现 dealloc 方法以释放所持有的对象</h2>
+
+<p>在<code>NSObject</code>类中有一个<code>dealloc</code>方法，它将在一个对象没有任何持有者时被自动调用，该对象所占内存也将被回收 – 在 Cocoa 的惯用语中这被称为<code>freed</code>或者<code>deallocated</code>(释放)。<code>dealloc</code>方法所扮演的角色是，释放对象所占用的内存，处理它所占用的资源，包括对象的所有实例变量的所有权。</p>
+
+<p>下面以<code>Person</code>类为例来说明下其<code>dealloc</code>方法的一种实现方式：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="k">@interface</span> <span class="nc">Person</span> : <span class="bp">NSObject</span>
+</span><span class="line"><span class="k">@property</span> <span class="p">(</span><span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">firstName</span><span class="p">;</span>
+</span><span class="line"><span class="k">@property</span> <span class="p">(</span><span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">lastName</span><span class="p">;</span>
+</span><span class="line"><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">fullName</span><span class="p">;</span>
+</span><span class="line"><span class="k">@end</span>
+</span><span class="line">
+</span><span class="line"><span class="k">@implementation</span> <span class="nc">Person</span>
+</span><span class="line"><span class="c1">// ...</span>
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">dealloc</span>
+</span><span class="line">    <span class="p">[</span><span class="n">_firstName</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">_lastName</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">super</span> <span class="n">dealloc</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line"><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p><strong>重要：</strong>
+<br />(1) 千万不要直接调用另一个类的<code>dealloc</code>方法；
+<br />(2) 必须在所实现的<code>dealloc</code>方法的<font color="blue">末尾</font>调用<font color="red">父类</font>(<code>superclass</code>)的<code>dealloc</code>方法；
+<br />(3) 不要把对系统资源的管理纳入对象的生命周期 (详情参考<a href="/blog/20141111/memory-management-2-practical/#dealloc-"> 不要在 dealloc 方法中管理稀缺资源 </a>)；
+<br />(4) 当应用终止后，对象的<code>dealloc</code>方法可能并没有被调用。由于程序所占用的内存会在其终止时被自动清理掉，所以只需让操作系统去清理其所占用的资源就行，这会比挨个儿调用那些内存管理方法更高效。</p>
+
+<h2 id="core-foundation-">Core Foundation 使用类似的规则</h2>
+
+<p>Core Foundation 对象的内存管理规则与此类似 (详情参阅 <a href="https://developer.apple.com/library/ios/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/CFMemoryMgmt.html#//apple_ref/doc/uid/10000127i"> Memory Management Programming Guide for Core Foundation </a>)。然而，Cocoa 与 Core Foundation 的命名约定有所不同。需要注意，Core Foundation 的创建规则 (参考 <a href="https://developer.apple.com/library/ios/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html#//apple_ref/doc/uid/20001148-103029"> The Create Rule </a>)并不适用于返回 Objective-C 对象的方法。例如，在如下所示的代码片段中，这里不用负责释放<code>myInstance</code>的内存：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="n">MyClass</span> <span class="o">*</span><span class="n">myInstance</span> <span class="o">=</span> <span class="p">[</span><span class="n">MyClass</span> <span class="n">createInstance</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<!--
+<span class="byline author vcard">Posted by <span class="fn">matrixzk</span></span>
+<!-->
+
+<span class="byline author vcard"><span class="fn">matrixzk •
+      
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Nov 9th, 2014 •
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/20141107/memory-management-0-introduction/" title="Previous Post: OC内存管理那些事儿(0)：关于内存管理">&larr; OC内存管理那些事儿(0)：关于内存管理</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/20141111/memory-management-2-practical/" title="Next Post: OC内存管理那些事儿(2)：内存管理实践">OC内存管理那些事儿(2)：内存管理实践 &rarr;</a>
+        <!-- &raquo; -->
+      
+    </p>
+  </footer>
+</article>
+<!--
+
+<!-->
+
+
+  <section>
+   <!-- 多说评论框 start -->
+<!--
+	<div class="ds-thread" data-thread-key="请将此处替换成文章在你的站点中的ID" data-title="请替换成文章的标题" data-url="请替换成文章的网址"></div>
+<!-->
+	<div class="ds-thread" data-thread-key="/blog/20141109/memory-management-1-policy" data-title="OC内存管理那些事儿(1)：内存管理策略" data-url="http://matrixzk.github.io/blog/20141109/memory-management-1-policy/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"matrixzk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+  </section>
+ 
+  
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最新文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/20141113/memory-management-3-autoreleasePool/">OC内存管理那些事儿(3)：使用自动释放池块</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141111/memory-management-2-practical/">OC内存管理那些事儿(2)：内存管理实践</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141109/memory-management-1-policy/">OC内存管理那些事儿(1)：内存管理策略</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141107/memory-management-0-introduction/">OC内存管理那些事儿(0)：关于内存管理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141104/git-flow-model/">一个完美的 Git 分支管理模型 (Git工作流)</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+  <br/>
+  <h1>分类目录</h1>
+  <ul id="categories">
+    <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
+<li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
+<li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
+<li class='category'><a href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理 (4)</a></li>
+
+  </ul>
+</section>
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - matrixzk -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+  <!--返回顶部开始-->
+<div id="full" style="width:0px; height:0px; position:fixed; right:60px; bottom:60px; z-index:100; text-align:right; background-color:transparent; cursor:pointer;">
+        <a href="#" onclick="goTop();return false;"><img src="/images/top.png" border=0 alt="返回顶部"></a>
+</div>
+<script src="/javascripts/goTop.js" type="text/javascript"></script>
+<!--返回顶部结束-->
+</body>
+</html>
+

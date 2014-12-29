@@ -9,7 +9,7 @@
   <meta name="author" content="matrixzk">
 
   
-  <meta name="description" content="众所周知，Git是目前最优秀的版本控制工具。但很多团队在使用Git进行协作开发的过程中，并没有形成一个清晰规范的流程。本文的作者Vincent Driessen向我们介绍了一个相对比较完美的分支管理策略，依照这个策略基本可以保证团队开发和版本发布有条不紊得进行。Vincent &hellip;">
+  <meta name="description" content="自动释放池块提供了一种机制，通过它我们在放弃一个对象的所有权时，可以避免该对象被立即释放掉(就像从一个方法返回一个对象那样)。通常情况下不需要创建自己的自动释放池的，但有些特殊情况就必须或者说有必要这样做。 ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -87,7 +87,157 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/20141104/git-flow-model/">一个完美的Git分支管理模型(Git工作流)</a></h1>
+      <h1 class="entry-title"><a href="/blog/20141113/memory-management-3-autoreleasePool/">OC内存管理那些事儿(3)：使用自动释放池块</a></h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Nov 13th, 2014
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>自动释放池块提供了一种机制，通过它我们在放弃一个对象的所有权时，可以避免该对象被立即释放掉(就像从一个方法返回一个对象那样)。通常情况下不需要创建自己的自动释放池的，但有些特殊情况就必须或者说有必要这样做。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/20141113/memory-management-3-autoreleasePool/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/20141111/memory-management-2-practical/">OC内存管理那些事儿(2)：内存管理实践</a></h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Nov 11th, 2014
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>虽然<a href="/blog/20141109/memory-management-1-policy/"><strong>上篇文章</strong></a>中所介绍的基本概念简单明了，但仍有一些实用的套路可使内存管理更加简单，而且能帮忙确保在最大限度得减少资源需求的同时，程序依然能够可靠健壮得运行。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/20141111/memory-management-2-practical/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/20141109/memory-management-1-policy/">OC内存管理那些事儿(1)：内存管理策略</a></h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Nov 9th, 2014
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在引用计数环境下用于内存管理的基本模型，是由 <strong>NSObject</strong> <code>protocol</code>中所定义的一些方法，结合一套标准的方法命名约定共同提供的。<strong>NSObject</strong> 类还定义了一个<code>dealloc</code>方法，该方法会在对象被释放时自动调用。本文将讲解在 Cocoa 编程中所需了解的关于正确进行内存管理的基本规则，并提供一些正确用法的示例。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/20141109/memory-management-1-policy/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/20141107/memory-management-0-introduction/">OC内存管理那些事儿(0)：关于内存管理</a></h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Nov 7th, 2014
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>不论哪门编程语言，内存管理都一直是一个广受关注的问题，包括有垃圾回收机制的 Java (前几天还听几个搞 Android 的小伙伴在热切的讨论 Java 中的内存管理)。作为有节操的 iOS 开发者，大家对内存管理问题更是时刻保持着高度的使命感。这两年新开的项目可能都已经使用 <code>ARC</code> ( Automatic Reference Counting )了。想想自己刚从 <code>MRR</code> ( manual retain-release ) 往 <code>ARC</code> 过渡那会儿，虽然苹果官方一再强调可以放心得使用 <code>ARC</code>，但由于在 <code>ARR</code> 下谨慎惯了，一时还是不太敢放心的把内存管理全都交给编译器去做。现在再看 <code>ARC</code>，确实是个可以放心托付的家伙，而且它在编译器级对内存管理做了更进一步的优化。其实当苹果在 Xcode 中内置了强大的静态分析器( Clang Static Analyzer )时我就想，既然内存泄漏隐患都能在编译阶段这么精准得定位到，为什么不更进一步直接把它们解决了呢。后来果然不久苹果就推出了强大的 <code>ARC</code> 机制，直接帮开发者把内存管理的事儿给做了，真是家强大的公司。虽然在 <code>ARC</code> 下不用太过多的关注内存管理问题，但是对 OC 的内存管理机制有一个深刻的理解还是非常有必要的，而且有时你也可能不得不去维护由于历史原因还在使用 <code>MRR</code> 的项目。</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/20141107/memory-management-0-introduction/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/20141104/git-flow-model/">一个完美的 Git 分支管理模型 (Git工作流)</a></h1>
     
     
       <p class="meta">
@@ -107,7 +257,7 @@ Nov 4th, 2014
   </header>
 
 
-  <div class="entry-content"><p>众所周知，<a href="http://git-scm.com/">Git</a>是目前最优秀的版本控制工具。但很多团队在使用Git进行协作开发的过程中，并没有形成一个清晰规范的流程。本文的作者<a href="http://nvie.com/">Vincent Driessen</a>向我们介绍了一个相对比较完美的分支管理策略，依照这个策略基本可以保证团队开发和版本发布有条不紊得进行。Vincent Driessen还据此实现了一个Git扩展集<a href="https://github.com/nvie/gitflow">git-flow</a>，它为本文所介绍的分支管理模型提供了一些较高层次的<code>repository operations</code>(库操作)。其本质是对下文所述的相关Git命令集进行进一步封装，并提供一些友好的命令行提示，具体可参考<a href="http://danielkummer.github.io/git-flow-cheatsheet/index.zh_CN.html">git-flow备忘清单</a>。本文译自<a href="http://nvie.com/posts/a-successful-git-branching-model/">A successful Git branching model</a>，推荐原汁原味的阅读。</p>
+  <div class="entry-content"><p>众所周知，<a href="http://git-scm.com/">Git</a> 是目前最优秀的版本控制工具。但很多团队在使用Git进行协作开发的过程中，并没有形成一个清晰规范的流程。本文的作者<a href="http://nvie.com/"> Vincent Driessen </a>向我们介绍了一个相对比较完美的分支管理策略，依照这个策略基本可以保证团队开发和版本发布有条不紊得进行。Vincent Driessen还据此实现了一个 Git 扩展集<a href="https://github.com/nvie/gitflow"> git-flow </a>，它为本文所介绍的分支管理模型提供了一些较高层次的<code>repository operations</code>(库操作)。其本质是对下文所述的相关Git命令集进行进一步封装，并提供一些友好的命令行提示，具体可参考<a href="http://danielkummer.github.io/git-flow-cheatsheet/index.zh_CN.html"> git-flow 备忘清单</a>。本文译自<a href="http://nvie.com/posts/a-successful-git-branching-model/"> A successful Git branching model </a>，推荐原汁原味的阅读。</p>
 
 </div>
   
@@ -145,7 +295,7 @@ Nov 3rd, 2014
   </header>
 
 
-  <div class="entry-content"><p>博客搭建起来后，总感觉默认的classic主题有些呆板，而且字体太大，阅读体验不是很好。于是就尝试着更改下主题。把Octopress的<strong><a href="https://github.com/imathis/octopress/wiki/3rd-Party-Octopress-Themes">推荐主题</a></strong>浏览了一遍后发现<a href="https://github.com/shashankmehta/greyshade">Greyshade</a>的效果还不错。但是安装后发现该主题有些细节还是不尽如人意，比如字体大小、行高、代码高亮背景，等等。经过一番调试后总算基本满意了，但是用移动设备打开后，顿时碎了。它的样式对移动设备真是差劲，比如代码高亮字体大小不一、左右滑动后右边有一条不窄的黑边并且消不去、左侧边栏在ipad上不能很好的适应，等等等等。相比之下Octopress的默认主题对移动设备的支持就要好太多，几乎完美，而且由于样式不花哨，很好的突出了内容主体。也许这就是这个主题的设计初衷吧，以内容为主体，淡化样式。对于博客来说，阅读体验才是重中之重，而且在这个移动互联网的时代，对移动设备的支持也必须到位。出于以上考虑，我又换回了默认的classic主题，但决定对其进行个性化改造。
+  <div class="entry-content"><p>博客搭建起来后，总感觉默认的 classic 主题有些呆板，而且字体太大，阅读体验不是很好。于是就尝试着更改下主题。把 Octopress 的<strong><a href="https://github.com/imathis/octopress/wiki/3rd-Party-Octopress-Themes">推荐主题</a></strong>浏览了一遍后发现<a href="https://github.com/shashankmehta/greyshade"> Greyshade </a>的效果还不错。但是安装后发现该主题有些细节还是不尽如人意，比如字体大小、行高、代码高亮背景，等等。经过一番调试后总算基本满意了，但是用移动设备打开后，顿时碎了。它的样式对移动设备真是差劲，比如代码高亮字体大小不一、左右滑动后右边有一条不窄的黑边并且消不去、左侧边栏在 iPad 上不能很好的适应，等等等等。相比之下 Octopress 的默认主题对移动设备的支持就要好太多，几乎完美，而且由于样式不花哨，很好的突出了内容主体。也许这就是这个主题的设计初衷吧，以内容为主体，淡化样式。对于博客来说，阅读体验才是重中之重，而且在这个移动互联网的时代，对移动设备的支持也必须到位。出于以上考虑，我又换回了默认的 classic 主题，但决定对其进行个性化改造。
 </div>
   
   
@@ -216,7 +366,7 @@ Oct 28th, 2014
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/20141020/octopress-setup-and-analysis/">使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析</a></h1>
+      <h1 class="entry-title"><a href="/blog/20141020/octopress-setup-and-analysis/">使用 Octopress 2.0 搭建基于 Github Pages 个人博客的详细过程及原理分析</a></h1>
     
     
       <p class="meta">
@@ -236,7 +386,7 @@ Oct 20th, 2014
   </header>
 
 
-  <div class="entry-content"><p>前两天图省事，让一位梦想通过博客改变世界的<strong><a href="http://droidyue.com/">小伙伴</a></strong>帮我搭建了一个基于<a href="https://pages.github.com/">Github Pages</a>的个人博客，使用的是<a href="http://octopress.org/">Octopress</a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据<code>octopress</code>的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
+  <div class="entry-content"><p>前两天图省事，让一位梦想通过博客改变世界的<strong><a href="http://droidyue.com/">小伙伴</a></strong>帮我搭建了一个基于<a href="https://pages.github.com/"> Github Pages </a>的个人博客，使用的是<a href="http://octopress.org/"> Octopress </a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据 Octopress 的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作(后来发现这很可能是由于 Octopress 升级到 2.0 之后目录结构有所调整)，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
 
 <p>PS.以下内容新手可以选择性参考，大神请绕道，谢谢 :]</p>
 
@@ -264,19 +414,23 @@ Oct 20th, 2014
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/20141104/git-flow-model/">一个完美的Git分支管理模型(Git工作流)</a>
+        <a href="/blog/20141113/memory-management-3-autoreleasePool/">OC内存管理那些事儿(3)：使用自动释放池块</a>
       </li>
     
       <li class="post">
-        <a href="/blog/20141103/octopress-custom-config/">Octopress 主题修改小记</a>
+        <a href="/blog/20141111/memory-management-2-practical/">OC内存管理那些事儿(2)：内存管理实践</a>
       </li>
     
       <li class="post">
-        <a href="/blog/20141028/ios8-day1-swift-overview/">iOS8 Day-by-Day :: Day1 :: Swift概述</a>
+        <a href="/blog/20141109/memory-management-1-policy/">OC内存管理那些事儿(1)：内存管理策略</a>
       </li>
     
       <li class="post">
-        <a href="/blog/20141020/octopress-setup-and-analysis/">使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析</a>
+        <a href="/blog/20141107/memory-management-0-introduction/">OC内存管理那些事儿(0)：关于内存管理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141104/git-flow-model/">一个完美的 Git 分支管理模型 (Git工作流)</a>
       </li>
     
   </ul>
@@ -288,6 +442,7 @@ Oct 20th, 2014
     <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
 <li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
 <li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
+<li class='category'><a href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理 (4)</a></li>
 
   </ul>
 </section>

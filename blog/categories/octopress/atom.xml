@@ -4,7 +4,7 @@
   <title><![CDATA[分类：octopress | Matrixzk's Blog]]></title>
   <link href="http://matrixzk.github.io/blog/categories/octopress/atom.xml" rel="self"/>
   <link href="http://matrixzk.github.io/"/>
-  <updated>2014-11-13T21:24:16+08:00</updated>
+  <updated>2014-12-29T15:47:16+08:00</updated>
   <id>http://matrixzk.github.io/</id>
   <author>
     <name><![CDATA[matrixzk]]></name>
@@ -18,7 +18,7 @@
     <link href="http://matrixzk.github.io/blog/20141103/octopress-custom-config/"/>
     <updated>2014-11-03T13:30:57+08:00</updated>
     <id>http://matrixzk.github.io/blog/20141103/octopress-custom-config</id>
-    <content type="html"><![CDATA[<p>博客搭建起来后，总感觉默认的classic主题有些呆板，而且字体太大，阅读体验不是很好。于是就尝试着更改下主题。把Octopress的<strong><a href="https://github.com/imathis/octopress/wiki/3rd-Party-Octopress-Themes">推荐主题</a></strong>浏览了一遍后发现<a href="https://github.com/shashankmehta/greyshade">Greyshade</a>的效果还不错。但是安装后发现该主题有些细节还是不尽如人意，比如字体大小、行高、代码高亮背景，等等。经过一番调试后总算基本满意了，但是用移动设备打开后，顿时碎了。它的样式对移动设备真是差劲，比如代码高亮字体大小不一、左右滑动后右边有一条不窄的黑边并且消不去、左侧边栏在ipad上不能很好的适应，等等等等。相比之下Octopress的默认主题对移动设备的支持就要好太多，几乎完美，而且由于样式不花哨，很好的突出了内容主体。也许这就是这个主题的设计初衷吧，以内容为主体，淡化样式。对于博客来说，阅读体验才是重中之重，而且在这个移动互联网的时代，对移动设备的支持也必须到位。出于以上考虑，我又换回了默认的classic主题，但决定对其进行个性化改造。
+    <content type="html"><![CDATA[<p>博客搭建起来后，总感觉默认的 classic 主题有些呆板，而且字体太大，阅读体验不是很好。于是就尝试着更改下主题。把 Octopress 的<strong><a href="https://github.com/imathis/octopress/wiki/3rd-Party-Octopress-Themes">推荐主题</a></strong>浏览了一遍后发现<a href="https://github.com/shashankmehta/greyshade"> Greyshade </a>的效果还不错。但是安装后发现该主题有些细节还是不尽如人意，比如字体大小、行高、代码高亮背景，等等。经过一番调试后总算基本满意了，但是用移动设备打开后，顿时碎了。它的样式对移动设备真是差劲，比如代码高亮字体大小不一、左右滑动后右边有一条不窄的黑边并且消不去、左侧边栏在 iPad 上不能很好的适应，等等等等。相比之下 Octopress 的默认主题对移动设备的支持就要好太多，几乎完美，而且由于样式不花哨，很好的突出了内容主体。也许这就是这个主题的设计初衷吧，以内容为主体，淡化样式。对于博客来说，阅读体验才是重中之重，而且在这个移动互联网的时代，对移动设备的支持也必须到位。出于以上考虑，我又换回了默认的 classic 主题，但决定对其进行个性化改造。
 <!-- more --></p>
 
 <ul id="markdown-toc">
@@ -30,7 +30,7 @@
 
 <h2 id="section">基本方法</h2>
 
-<p>主要使用到Chrome的<code>审核元素</code>工具，通过它定位到想要修改的地方，然后根据相应的<code>css</code>标记或关键字(比如title什么的)，在命令行中通过<code>grep "your_keyword" ./ -R</code>在<code>source</code>或<code>sass</code>目录下定位到相应的文件，然后对其进行修改。这里的修改分为对网页模板的修改和对样式的修改，之后会提到。</p>
+<p>主要使用到 Chrome 的<code>审核元素</code>工具，通过它定位到想要修改的地方，然后根据相应的<code>css</code>标记或关键字(比如title什么的)，在命令行中通过<code>grep "your_keyword" ./ -R</code>在<code>source</code>或<code>sass</code>目录下定位到相应的文件，然后对其进行修改。这里的修改分为对网页模板的修改和对样式的修改，之后会提到。</p>
 
 <p>另外说一个关于主题切换的小技巧。比如你通过修改源文件，或者通过修改第三方的主题，配置出了一套新的主题，但感觉不是很满意。此时如果通过<code>rake install</code>再去安装别的主题，就会把之前的主题给覆盖掉(关于该命令详细做了什么，参考根目录下的<code>Rakefile</code>文件)。你可能想把两套主题都保留着，毕竟是用心配置出来的嘛。这时你可以将每套主题的<code>source</code>或<code>sass</code>目录做个备份，想要切换到哪个主题时，就把为该主题所备份的上述两个目录拷贝到根目录下，然后执行如下两个操作：</p>
 
@@ -40,7 +40,7 @@ rake generate       # 重新生成网站
 
 <p>这时用<code>rake preview</code>看下效果。可能需要多刷新几次才能看到新的效果，原因还是缓存，be patient~</p>
 
-<p>忍不住想说一下我遇到的一个坑。在Octopress源码中，注释代码应该这样：</p>
+<p>忍不住想说一下我遇到的一个坑。在 Octopress 源码中，注释代码应该这样：</p>
 
 <pre><code>&lt;!--
 我被注释掉了 :]
@@ -68,9 +68,9 @@ rake generate       # 重新生成网站
 		|__ post/       # 所发布文章的时间、作者等元信息，以及分享评论等子模板
 </code></pre>
 
-<p>比如，想要修改网页的&lt;head&gt;标签下的信息，对<code>/source/_includes/custom/head.html</code>进行相应修改即可。想要修改网页顶部(导航栏上边)的内容，修改<code>/source/_includes/custom/header.html</code>即可。如果想在导航栏中添加新的标签，修改<code>/source/_includes/custom/navigation.html</code>文件即可。</p>
+<p>比如，想要修改网页的 &lt;head&gt; 标签下的信息，对<code>/source/_includes/custom/head.html</code>进行相应修改即可。想要修改网页顶部(导航栏上边)的内容，修改<code>/source/_includes/custom/header.html</code>即可。如果想在导航栏中添加新的标签，修改<code>/source/_includes/custom/navigation.html</code>文件即可。</p>
 
-<p>可参考官方文档<a href="http://octopress.org/docs/theme/template/">Theming &amp; Customization</a>。</p>
+<p>可参考官方文档<a href="http://octopress.org/docs/theme/template/"> Theming &amp; Customization </a>。</p>
 
 <h2 id="section-2">修改网页样式</h2>
 
@@ -79,7 +79,7 @@ rake generate       # 重新生成网站
 <pre><code>octopress/
 |__ sass/
 	|__ base/
-	|	|__ _theme.scss      # 用到的所有color都定义在这里
+	|	|__ _theme.scss      # 用到的所有 color 都定义在这里
 	|	|__ _layout.scss     # 响应式布局在这里定义
 	|	|__ _solarized.scss  # 主要定义文章的排版，包括字体、字号、行间距和字体颜色引用等
 	|	
@@ -90,17 +90,17 @@ rake generate       # 重新生成网站
 
 </code></pre>
 
-<p>Octopress用到的所有颜色都通过<code>Sass</code>变量在<code>/sass/base/_theme.scss</code>中定义着。如果要修改某处颜色，最好是在<code>sass/custom/_colors.scss</code>中重写在<code>sass/base/_theme.scss</code>中所定义的相应颜色变量。这里很多color是使用<a href="http://sass-lang.com/documentation/Sass/Script/Functions.html">Sass’s color functions</a>获取的。</p>
+<p>Octopress用到的所有颜色都通过<code>Sass</code>变量在<code>/sass/base/_theme.scss</code>中定义着。如果要修改某处颜色，最好是在<code>sass/custom/_colors.scss</code>中重写在<code>sass/base/_theme.scss</code>中所定义的相应颜色变量。这里很多 color 是使用<a href="http://sass-lang.com/documentation/Sass/Script/Functions.html">Sass’s color functions</a>获取的。</p>
 
-<p><strong>注意</strong>，以后要修改其他样式时，也最好遵守这样一个原则，尽量在<code>sass/custom/</code>目录下修改相应的文件。因为<code>sass/custom/</code>中的文件是在<code>sass/base</code>中文件之后被读取的，因此<code>sass/custom/</code>目录的内容决定着最终的样式。而且当通过<code>rake update</code>更新Octopress框架源码时，<code>sass/custom/</code>目录是不会被覆盖的，也就是你之前所做的自定义样式依然会保留，而<code>sass/base</code>目录下的文件会全部被更新后的Octopress框架源码给覆盖掉。</p>
+<p><strong>注意</strong>，以后要修改其他样式时，也最好遵守这样一个原则，尽量在<code>sass/custom/</code>目录下修改相应的文件。因为<code>sass/custom/</code>中的文件是在<code>sass/base</code>中文件之后被读取的，因此<code>sass/custom/</code>目录的内容决定着最终的样式。而且当通过<code>rake update</code>更新 Octopress 框架源码时，<code>sass/custom/</code>目录是不会被覆盖的，也就是你之前所做的自定义样式依然会保留，而<code>sass/base</code>目录下的文件会全部被更新后的 Octopress 框架源码给覆盖掉。</p>
 
 <p>可参考官方文档<a href="http://octopress.org/docs/theme/styles/">Styles</a>。</p>
 
 <h2 id="section-3">参考链接</h2>
 
-<p>基于上述方法基本就可以对你的博客外观进行随心所欲的修改了，如果再懂点儿css和sass知识就会更得心应手，关于css和sass参考<a href="http://blog.visioncan.com/2011/sass-scss-your-css/"><strong>这里</strong></a>。</p>
+<p>基于上述方法基本就可以对你的博客外观进行随心所欲的修改了，如果再懂点儿css和sass知识就会更得心应手，关于 css 和 sass 参考<a href="http://blog.visioncan.com/2011/sass-scss-your-css/"><strong>这里</strong></a>。</p>
 
-<p>除了非常棒的Octopress<a href="http://octopress.org/docs/"><strong>官方文档</strong></a>，另外提供几个参考链接：</p>
+<p>除了非常棒的 Octopress <a href="http://octopress.org/docs/"><strong>官方文档</strong></a>，另外提供几个参考链接：</p>
 
 <ul>
   <li><a href="http://www.rubydoc.info/gems/octopress-date-format/2.0.1/frames">Octopress Date Format</a></li>
@@ -145,11 +145,11 @@ rake generate       # 重新生成网站
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析]]></title>
+    <title type="html"><![CDATA[使用 Octopress 2.0 搭建基于 Github Pages 个人博客的详细过程及原理分析]]></title>
     <link href="http://matrixzk.github.io/blog/20141020/octopress-setup-and-analysis/"/>
     <updated>2014-10-20T21:55:36+08:00</updated>
     <id>http://matrixzk.github.io/blog/20141020/octopress-setup-and-analysis</id>
-    <content type="html"><![CDATA[<p>前两天图省事，让一位梦想通过博客改变世界的<strong><a href="http://droidyue.com/">小伙伴</a></strong>帮我搭建了一个基于<a href="https://pages.github.com/">Github Pages</a>的个人博客，使用的是<a href="http://octopress.org/">Octopress</a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据<code>octopress</code>的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
+    <content type="html"><![CDATA[<p>前两天图省事，让一位梦想通过博客改变世界的<strong><a href="http://droidyue.com/">小伙伴</a></strong>帮我搭建了一个基于<a href="https://pages.github.com/"> Github Pages </a>的个人博客，使用的是<a href="http://octopress.org/"> Octopress </a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据 Octopress 的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作(后来发现这很可能是由于 Octopress 升级到 2.0 之后目录结构有所调整)，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
 
 <p>PS.以下内容新手可以选择性参考，大神请绕道，谢谢 :]</p>
 
@@ -159,7 +159,7 @@ rake generate       # 重新生成网站
   <li><a href="#section">准备工作</a></li>
   <li><a href="#section-1">搭建过程概述</a>    <ul>
       <li><a href="#setupoctopress">设置(Setup)Octopress</a></li>
-      <li><a href="#deploygithub-pages">部署(Deploy)到Github Pages</a></li>
+      <li><a href="#deploy-github-pages">部署(Deploy)到 Github Pages</a></li>
       <li><a href="#section-2">下面来简单介绍一下怎么新建一篇文章</a></li>
     </ul>
   </li>
@@ -169,7 +169,7 @@ rake generate       # 重新生成网站
       <li><a href="#rake-generate">rake generate</a></li>
       <li><a href="#rake-preview">rake preview</a></li>
       <li><a href="#rake-deploy">rake deploy</a></li>
-      <li><a href="#github-pagessource">生成Github Pages远程库的source分支</a></li>
+      <li><a href="#github-pages-source-">生成 Github Pages远程库的 source 分支</a></li>
       <li><a href="#rake-newposthello-world">rake new_post[“Hello World”]</a></li>
     </ul>
   </li>
@@ -177,17 +177,17 @@ rake generate       # 重新生成网站
 
 <h2 id="section">准备工作</h2>
 
-<p>首先强调一下，<code>Octopress</code>是一个为hacker们准备的博客框架，你应该对<code>shell</code>命令有亲切感，并且对基础的<a href="http://git-scm.com/">Git</a>知识有所了解，否则Octopress可能不适合你。不过没关系，只要你有足够的热情，上述都是次要的。</p>
+<p>首先强调一下，<code>Octopress</code>是一个为 hacker 们准备的博客框架，你应该对<code>shell</code>命令有亲切感，并且对基础的<a href="http://git-scm.com/"> Git </a>知识有所了解，否则 Octopress 可能不适合你。不过没关系，只要你有足够的热情，上述都是次要的。</p>
 
-<p>开始之前，请确保你已安装了<code>Git</code>和<code>Ruby 1.9.3</code>及以上版本。如果Ruby版本过低，可以使用<a href="https://github.com/sstephenson/rbenv">rbenv</a>或<a href="http://rvm.io/">RVM</a>进行升级。个人推荐使用<code>RVM</code>。</p>
+<p>开始之前，请确保你已安装了<code>Git</code>和<code>Ruby 1.9.3</code>及以上版本。如果 Ruby 版本过低，可以使用<a href="https://github.com/sstephenson/rbenv"> rbenv </a>或<a href="http://rvm.io/"> RVM </a>进行升级。个人推荐使用<code>RVM</code>。</p>
 
 <h2 id="section-1">搭建过程概述</h2>
 
-<p>如果上述的Git和Ruby环境都准备好了，顺次执行下述各命令就能很快搭建成功。关于部署到<code>Github Pages</code>上时的每个<code>rake</code>命令都做了什么，后边会详述。</p>
+<p>如果上述的 Git 和 Ruby 环境都准备好了，顺次执行下述各命令就能很快搭建成功。关于部署到<code>Github Pages</code>上时的每个<code>rake</code>命令都做了什么，后边会详述。</p>
 
 <h3 id="setupoctopress">设置(Setup)Octopress</h3>
 
-<p><code>clone</code>下Github上的<a href="https://github.com/imathis/octopress">octopress仓库</a></p>
+<p><code>clone</code>下 Github 上的<a href="https://github.com/imathis/octopress"> octopress仓库 </a></p>
 
 <p><code>
 git clone git://github.com/imathis/octopress.git octopress
@@ -208,9 +208,9 @@ bundle install
 rake install
 </code></p>
 
-<h3 id="deploygithub-pages">部署(Deploy)到Github Pages</h3>
+<h3 id="deploy-github-pages">部署(Deploy)到 Github Pages</h3>
 
-<p><a href="https://github.com/repositories/new">新创建</a>一个名字格式形如 <code>username.github.io</code> 的Github仓库，这里的<code>username</code>即你的Github用户名(或组织名)。</p>
+<p><a href="https://github.com/repositories/new">新创建</a>一个名字格式形如 <code>username.github.io</code> 的 Github 仓库，这里的<code>username</code>即你的 Github 用户名(或组织名)。</p>
 
 <p>配置<code>Github Pages</code></p>
 
@@ -218,7 +218,7 @@ rake install
 rake setup_github_pages
 </code></p>
 
-<p>该命令会要求你输入上边所新建的Github仓库的<code>URL</code>。复制粘贴下你新创建仓库的<code>SSH</code>或<code>HTTPS</code> URL 即可(比如SSH的URL <code>git@github.com:username/username.github.io.git</code>)。</p>
+<p>该命令会要求你输入上边所新建的 Github 仓库的<code>URL</code>。复制粘贴下你新创建仓库的<code>SSH</code>或<code>HTTPS</code> URL 即可(比如SSH的URL <code>git@github.com:username/username.github.io.git</code>)。</p>
 
 <p>然后生成并部署站点</p>
 
@@ -264,12 +264,12 @@ rake preview    # 生成blog预览
 <p>部署blog</p>
 
 <p><code>
-rake deploy     # 部署blog到Github Pages
+rake deploy     # 部署 blog 到 Github Pages
 </code></p>
 
 <p>OK，一篇名为<code>"Hello World"</code>的博客已经发布到了<code>Github Pages</code>，可以在浏览器输入上述<code>username.github.io</code>验证一下。</p>
 
-<p>到目前为止，关于怎样搭建博客和发布博客已经介绍完毕。看一下你本地的<code>octopress目录</code>和Github上的<code>username.github.io</code>仓库目录，如果你对他们的结构有所疑问，或者对上述<code>rake</code>命令究竟做了什么感到好奇，那么接着往下看。</p>
+<p>到目前为止，关于怎样搭建博客和发布博客已经介绍完毕。看一下你本地的<code>octopress目录</code>和 Github 上的<code>username.github.io</code>仓库目录，如果你对他们的结构有所疑问，或者对上述<code>rake</code>命令究竟做了什么感到好奇，那么接着往下看。</p>
 
 <h2 id="section-3">搭建过程详解</h2>
 
@@ -284,7 +284,7 @@ rake deploy     # 部署blog到Github Pages
 <p>初始化并配置<code>octopress</code>的主题，如果后边没跟主题名参数，则安装默认主题。该命令主要做了如下操作：</p>
 
 <ol>
-  <li>首先根据octopress是否已有<code>source</code>目录或<code>sass</code>目录来判断是否已安装了主题，如果已安装，则询问用户是否覆盖已有主题。如果否，则流程终止(<code>abort</code>)。</li>
+  <li>首先根据 octopress 是否已有<code>source</code>目录或<code>sass</code>目录来判断是否已安装了主题，如果已安装，则询问用户是否覆盖已有主题。如果否，则流程终止(<code>abort</code>)。</li>
   <li>该命令后边是可以再加一个可选的主题名的，否则会使用默认主题<code>Classic</code>。</li>
   <li>创建<code>source</code>目录，并将<code>"#{themes_dir}/#{theme}/source/."</code>目录下的文件拷贝到<code>source</code>目录。</li>
   <li>创建<code>sass</code>目录，并将<code>"#{themes_dir}/#{theme}/sass/."</code>目录下的文件拷贝到<code>sass</code>目录。</li>
@@ -300,7 +300,7 @@ rake deploy     # 部署blog到Github Pages
 <ol>
   <li>
     <p>要求输入你<code>Github Pages</code>仓库的<code>URL</code>。
-该<code>URL</code>即此步之前你在Github上新建的那个命名格式为<code>username.github.io</code>的仓库的URL。之所以以这样的格式命名该仓库，是因为后边要通过该URL提取出该仓库名(即<code>username.github.io</code>)，以用来配置成你的Github Pages的域名，即你博客的域名。该URL有<code>SSH</code>和<code>HTTPS</code>两种格式，都很容易通过字符串截取拿到子串<code>"username.github.io"</code>。(Github之前使用<code>http://username.github.com</code>作为Github Pages的域名，后来将<code>.com</code>改为了<code>.io</code>，该<code>rake</code>脚本中对此做了兼容处理)。</p>
+该<code>URL</code>即此步之前你在Github上新建的那个命名格式为<code>username.github.io</code>的仓库的URL。之所以以这样的格式命名该仓库，是因为后边要通过该URL提取出该仓库名(即<code>username.github.io</code>)，以用来配置成你的Github Pages的域名，即你博客的域名。该URL有<code>SSH</code>和<code>HTTPS</code>两种格式，都很容易通过字符串截取拿到子串<code>"username.github.io"</code>。( Github 之前使用<code>http://username.github.com</code>作为 Github Pages 的域名，后来将<code>.com</code>改为了<code>.io</code>，该<code>rake</code>脚本中对此做了兼容处理)。</p>
   </li>
   <li>
     <p>将指向<code>imathis/octopress</code>的远程库的名字由<code>origin</code>改为<code>octopress</code>。</p>
@@ -358,14 +358,14 @@ rake deploy     # 部署blog到Github Pages
  * source
 </code></pre>
 
-    <p><strong>NOTE:</strong> 理解这里很重要，关于这里为什么要这样做，要结合下边的6一起理解。前边已经提到，用户或组织的Github Pages使用master分支作为web服务的公开目录，为你URL为<code>http://username.github.io</code>的Pages提供网站内容(即内容文件)。而当前的本地<code>master</code>分支即整个<code>octopress框架</code>的源码所在的分支。其实本地的<code>master</code>分支就是一个名字为<code>master</code>的<code>指针</code>，它现在指向的是整个octopress框架的源码所在的本地分支。我们这里做的其实是把指向整个octopress框架的源码所在的本地分支的指针的名字由<code>master</code>改为<code>source</code>，把这个<code>master</code>指针名字让出来，让它指向后边6所初始化的用于<code>web访问</code>的<code>octopress/_deploy</code>目录下的本地仓库的主分支。这样，该目录(本地<code>octopress/_deploy</code>目录)下的本地<code>master</code>分支对应的就是<code>Github Pages</code>远程库的<code>master</code>分支。</p>
+    <p><strong>NOTE:</strong> 理解这里很重要，关于这里为什么要这样做，要结合下边的6一起理解。前边已经提到，用户或组织的 Github Pages 使用 master 分支作为 web 服务的公开目录，为你URL为<code>http://username.github.io</code>的 Pages 提供网站内容(即内容文件)。而当前的本地<code>master</code>分支即整个<code>octopress框架</code>的源码所在的分支。其实本地的<code>master</code>分支就是一个名字为<code>master</code>的<code>指针</code>，它现在指向的是整个 octopress 框架的源码所在的本地分支。我们这里做的其实是把指向整个 octopress 框架的源码所在的本地分支的指针的名字由<code>master</code>改为<code>source</code>，把这个<code>master</code>指针名字让出来，让它指向后边6所初始化的用于<code>web访问</code>的<code>octopress/_deploy</code>目录下的本地仓库的主分支。这样，该目录(本地<code>octopress/_deploy</code>目录)下的本地<code>master</code>分支对应的就是<code>Github Pages</code>远程库的<code>master</code>分支。</p>
   </li>
   <li>
-    <p>根据前边所提供的Github Pages仓库的URL来配置博客的URL
-从前边所提供的SSH或HTTPS类型的URL中截取仓库名<code>username.github.io</code>，然后从本地的octopress目录下读取博客的配置文件<code>_config.yml</code>，将其<code>url</code>参数值改为<code>http://username.github.io</code>。</p>
+    <p>根据前边所提供的 Github Pages 仓库的 URL 来配置博客的 URL
+从前边所提供的 SSH 或 HTTPS 类型的 URL 中截取仓库名<code>username.github.io</code>，然后从本地的 octopress 目录下读取博客的配置文件<code>_config.yml</code>，将其<code>url</code>参数值改为<code>http://username.github.io</code>。</p>
   </li>
   <li>
-    <p>在本地<code>octopress</code>目录下新建<code>_deploy</code>目录，并对其进行Git初始化，然后添加<code>Github Pages</code>仓库作为其远程仓库。</p>
+    <p>在本地<code>octopress</code>目录下新建<code>_deploy</code>目录，并对其进行 Git 初始化，然后添加<code>Github Pages</code>仓库作为其远程仓库。</p>
 
     <p>NOTE:此时已经有了两个本地仓库(这个和前边3提到的整个<code>octopress</code>目录(即<code>octopress框架</code>)所对应的本地仓库)指向<code>Github Pages</code>仓库作为其远程仓库了，分别作为其<code>master</code>分支和<code>source</code>分支。</p>
 
@@ -373,7 +373,7 @@ rake deploy     # 部署blog到Github Pages
  $ git init
  $ git add .
  $ git commit -m "Octopress init"
- # 添加Github Pages仓库作为其远程仓库
+ # 添加 Github Pages 仓库作为其远程仓库
  $ git remote add origin git@github.com:matrixzk/matrixzk.github.io.git
 </code></pre>
 
@@ -403,14 +403,14 @@ jekyll build
 
 <h3 id="rake-deploy">rake deploy</h3>
 
-<p>将站点部署到服务器，即发布站点到互联网。由于<code>_deploy</code>目录所代表的本地仓库的<code>master</code>分支对应<code>Github Pages远程仓库</code>的<code>master</code>分支，该分支目录的内容即<code>Github Pages</code>在互联网上供公开访问的站点内容。因此这里做的主要就是将新写的博客文章copy到<code>_deploy</code>目录下，然后将此修改<code>push</code>到<code>Github Pages</code>远程库的<code>master</code>分支。</p>
+<p>将站点部署到服务器，即发布站点到互联网。由于<code>_deploy</code>目录所代表的本地仓库的<code>master</code>分支对应<code>Github Pages 远程仓库</code>的<code>master</code>分支，该分支目录的内容即<code>Github Pages</code>在互联网上供公开访问的站点内容。因此这里做的主要就是将新写的博客文章copy到<code>_deploy</code>目录下，然后将此修改<code>push</code>到<code>Github Pages</code>远程库的<code>master</code>分支。</p>
 
 <ol>
   <li>首先查看是否存在预览模式的博客(它们不该被发布)，如果有则删除，并在此重新执行<code>rake generate</code>。</li>
   <li>将<code>source</code>目录下的文件拷贝到<code>public</code>目录下。</li>
   <li>进入<code>_deploy</code>目录，执行<code>git pull</code>操作。</li>
   <li>将<code>public</code>目录的内容拷贝到<code>_deploy</code>目录下。</li>
-  <li>将<code>_deploy</code>目录所对应的本地master分支的修改<code>push</code>到Github Pages远程库的master分支，即将Github Pages即你的博客部署到了互联网。这里主要做了如下操作。</li>
+  <li>将<code>_deploy</code>目录所对应的本地 master 分支的修改<code>push</code>到 Github Pages 远程库的 master 分支，即将 Github Pages 即你的博客部署到了互联网。这里主要做了如下操作。</li>
 </ol>
 
 <p><code>
@@ -420,9 +420,9 @@ $ git commit -m "Site updated at #Time.now(即当前时间)"
 $ git push origin master  # Pushing generated _deploy website
 </code></p>
 
-<h3 id="github-pagessource">生成Github Pages远程库的source分支</h3>
+<h3 id="github-pages-source-">生成 Github Pages远程库的 source 分支</h3>
 
-<p>搭建过程的最后一步是将你本地<code>octopress框架</code>的源码(即本地的<code>source</code>分支)<code>push</code>到<code>Github Pages</code>远程库。注意，此步之前Github Pages远程库还不存在<code>source</code>分支。</p>
+<p>搭建过程的最后一步是将你本地<code>octopress框架</code>的源码(即本地的<code>source</code>分支)<code>push</code>到<code>Github Pages</code>远程库。注意，此步之前 Github Pages 远程库还不存在<code>source</code>分支。</p>
 
 <p><code>
 cd octopress
@@ -431,7 +431,7 @@ git commit -m 'your message'
 git push origin source # 注意，此时你本地的source分支push到远程库，之后远程库会生成一个source分支
 </code></p>
 
-<p><strong>NOTE:</strong> 这里所做的是将本地<code>octopress</code>目录下的本地<code>source</code>分支(前边已将该默认分支名由<code>master</code>改为<code>source</code>)<code>push</code>到Github Pages远程库，这样，<code>Github Pages</code>远程库就生成了<code>source</code>分支。至此，<code>Github Pages</code>远程库有了两个分支，即<code>master</code>分支和<code>source</code>分支。这里的<code>master</code>分支所对应的本地分支为本地的<code>octopress/_deploy</code>目录下本地仓库的<code>master</code>分支，主要存放部署完毕生成的供互联网访问的<code>Github Pages</code>站点(即你的博客站点)的内容。<code>source</code>分支所对应的本地分支为本地的整个<code>octopress</code>目录下本地仓库的<code>source</code>分支(即该本地库的主分支，之前将其名字有<code>master</code>改为了<code>source</code>，缘由前边已详述)，主要存放整个<code>octopress框架</code>源码的内容。</p>
+<p><strong>NOTE:</strong> 这里所做的是将本地<code>octopress</code>目录下的本地<code>source</code>分支(前边已将该默认分支名由<code>master</code>改为<code>source</code>)<code>push</code>到 Github Pages 远程库，这样，<code>Github Pages</code>远程库就生成了<code>source</code>分支。至此，<code>Github Pages</code>远程库有了两个分支，即<code>master</code>分支和<code>source</code>分支。这里的<code>master</code>分支所对应的本地分支为本地的<code>octopress/_deploy</code>目录下本地仓库的<code>master</code>分支，主要存放部署完毕生成的供互联网访问的<code>Github Pages</code>站点(即你的博客站点)的内容。<code>source</code>分支所对应的本地分支为本地的整个<code>octopress</code>目录下本地仓库的<code>source</code>分支(即该本地库的主分支，之前将其名字有<code>master</code>改为了<code>source</code>，缘由前边已详述)，主要存放整个<code>octopress框架</code>源码的内容。</p>
 
 <h3 id="rake-newposthello-world">rake new_post[“Hello World”]</h3>
 

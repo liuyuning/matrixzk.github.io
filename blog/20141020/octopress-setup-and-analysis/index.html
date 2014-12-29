@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析 - Matrixzk&#8217;s Blog</title>
+  <title>使用 Octopress 2.0 搭建基于 Github Pages 个人博客的详细过程及原理分析 - Matrixzk&#8217;s Blog</title>
   <meta name="author" content="matrixzk">
 
   
-  <meta name="description" content="前两天图省事，让一位梦想通过博客改变世界的小伙伴帮我搭建了一个基于Github Pages的个人博客，使用的是Octopress静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据octopress的官方文档描述， &hellip;">
+  <meta name="description" content="前两天图省事，让一位梦想通过博客改变世界的小伙伴帮我搭建了一个基于 Github Pages 的个人博客，使用的是 Octopress 静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据 Octopress 的官方文档描述， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -84,7 +84,7 @@
   
   <header>
     
-      <h1 class="entry-title">使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析</h1>
+      <h1 class="entry-title">使用 Octopress 2.0 搭建基于 Github Pages 个人博客的详细过程及原理分析</h1>
     
     
       <p class="meta">
@@ -104,7 +104,7 @@ Oct 20th, 2014
   </header>
 
 
-<div class="entry-content"><p>前两天图省事，让一位梦想通过博客改变世界的<strong><a href="http://droidyue.com/">小伙伴</a></strong>帮我搭建了一个基于<a href="https://pages.github.com/">Github Pages</a>的个人博客，使用的是<a href="http://octopress.org/">Octopress</a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据<code>octopress</code>的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
+<div class="entry-content"><p>前两天图省事，让一位梦想通过博客改变世界的<strong><a href="http://droidyue.com/">小伙伴</a></strong>帮我搭建了一个基于<a href="https://pages.github.com/"> Github Pages </a>的个人博客，使用的是<a href="http://octopress.org/"> Octopress </a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据 Octopress 的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作(后来发现这很可能是由于 Octopress 升级到 2.0 之后目录结构有所调整)，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
 
 <p>PS.以下内容新手可以选择性参考，大神请绕道，谢谢 :]</p>
 
@@ -114,7 +114,7 @@ Oct 20th, 2014
   <li><a href="#section">准备工作</a></li>
   <li><a href="#section-1">搭建过程概述</a>    <ul>
       <li><a href="#setupoctopress">设置(Setup)Octopress</a></li>
-      <li><a href="#deploygithub-pages">部署(Deploy)到Github Pages</a></li>
+      <li><a href="#deploy-github-pages">部署(Deploy)到 Github Pages</a></li>
       <li><a href="#section-2">下面来简单介绍一下怎么新建一篇文章</a></li>
     </ul>
   </li>
@@ -124,7 +124,7 @@ Oct 20th, 2014
       <li><a href="#rake-generate">rake generate</a></li>
       <li><a href="#rake-preview">rake preview</a></li>
       <li><a href="#rake-deploy">rake deploy</a></li>
-      <li><a href="#github-pagessource">生成Github Pages远程库的source分支</a></li>
+      <li><a href="#github-pages-source-">生成 Github Pages远程库的 source 分支</a></li>
       <li><a href="#rake-newposthello-world">rake new_post[“Hello World”]</a></li>
     </ul>
   </li>
@@ -132,17 +132,17 @@ Oct 20th, 2014
 
 <h2 id="section">准备工作</h2>
 
-<p>首先强调一下，<code>Octopress</code>是一个为hacker们准备的博客框架，你应该对<code>shell</code>命令有亲切感，并且对基础的<a href="http://git-scm.com/">Git</a>知识有所了解，否则Octopress可能不适合你。不过没关系，只要你有足够的热情，上述都是次要的。</p>
+<p>首先强调一下，<code>Octopress</code>是一个为 hacker 们准备的博客框架，你应该对<code>shell</code>命令有亲切感，并且对基础的<a href="http://git-scm.com/"> Git </a>知识有所了解，否则 Octopress 可能不适合你。不过没关系，只要你有足够的热情，上述都是次要的。</p>
 
-<p>开始之前，请确保你已安装了<code>Git</code>和<code>Ruby 1.9.3</code>及以上版本。如果Ruby版本过低，可以使用<a href="https://github.com/sstephenson/rbenv">rbenv</a>或<a href="http://rvm.io/">RVM</a>进行升级。个人推荐使用<code>RVM</code>。</p>
+<p>开始之前，请确保你已安装了<code>Git</code>和<code>Ruby 1.9.3</code>及以上版本。如果 Ruby 版本过低，可以使用<a href="https://github.com/sstephenson/rbenv"> rbenv </a>或<a href="http://rvm.io/"> RVM </a>进行升级。个人推荐使用<code>RVM</code>。</p>
 
 <h2 id="section-1">搭建过程概述</h2>
 
-<p>如果上述的Git和Ruby环境都准备好了，顺次执行下述各命令就能很快搭建成功。关于部署到<code>Github Pages</code>上时的每个<code>rake</code>命令都做了什么，后边会详述。</p>
+<p>如果上述的 Git 和 Ruby 环境都准备好了，顺次执行下述各命令就能很快搭建成功。关于部署到<code>Github Pages</code>上时的每个<code>rake</code>命令都做了什么，后边会详述。</p>
 
 <h3 id="setupoctopress">设置(Setup)Octopress</h3>
 
-<p><code>clone</code>下Github上的<a href="https://github.com/imathis/octopress">octopress仓库</a></p>
+<p><code>clone</code>下 Github 上的<a href="https://github.com/imathis/octopress"> octopress仓库 </a></p>
 
 <div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
@@ -163,16 +163,16 @@ Oct 20th, 2014
 <div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 </pre></td><td class="code"><pre><code class=""><span class="line">rake install</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<h3 id="deploygithub-pages">部署(Deploy)到Github Pages</h3>
+<h3 id="deploy-github-pages">部署(Deploy)到 Github Pages</h3>
 
-<p><a href="https://github.com/repositories/new">新创建</a>一个名字格式形如 <code>username.github.io</code> 的Github仓库，这里的<code>username</code>即你的Github用户名(或组织名)。</p>
+<p><a href="https://github.com/repositories/new">新创建</a>一个名字格式形如 <code>username.github.io</code> 的 Github 仓库，这里的<code>username</code>即你的 Github 用户名(或组织名)。</p>
 
 <p>配置<code>Github Pages</code></p>
 
 <div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 </pre></td><td class="code"><pre><code class=""><span class="line">rake setup_github_pages</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>该命令会要求你输入上边所新建的Github仓库的<code>URL</code>。复制粘贴下你新创建仓库的<code>SSH</code>或<code>HTTPS</code> URL 即可(比如SSH的URL <code>git@github.com:username/username.github.io.git</code>)。</p>
+<p>该命令会要求你输入上边所新建的 Github 仓库的<code>URL</code>。复制粘贴下你新创建仓库的<code>SSH</code>或<code>HTTPS</code> URL 即可(比如SSH的URL <code>git@github.com:username/username.github.io.git</code>)。</p>
 
 <p>然后生成并部署站点</p>
 
@@ -216,11 +216,11 @@ Oct 20th, 2014
 <p>部署blog</p>
 
 <div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">rake deploy     # 部署blog到Github Pages</span></code></pre></td></tr></table></div></figure></notextile></div>
+</pre></td><td class="code"><pre><code class=""><span class="line">rake deploy     # 部署 blog 到 Github Pages</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>OK，一篇名为<code>"Hello World"</code>的博客已经发布到了<code>Github Pages</code>，可以在浏览器输入上述<code>username.github.io</code>验证一下。</p>
 
-<p>到目前为止，关于怎样搭建博客和发布博客已经介绍完毕。看一下你本地的<code>octopress目录</code>和Github上的<code>username.github.io</code>仓库目录，如果你对他们的结构有所疑问，或者对上述<code>rake</code>命令究竟做了什么感到好奇，那么接着往下看。</p>
+<p>到目前为止，关于怎样搭建博客和发布博客已经介绍完毕。看一下你本地的<code>octopress目录</code>和 Github 上的<code>username.github.io</code>仓库目录，如果你对他们的结构有所疑问，或者对上述<code>rake</code>命令究竟做了什么感到好奇，那么接着往下看。</p>
 
 <h2 id="section-3">搭建过程详解</h2>
 
@@ -235,7 +235,7 @@ Oct 20th, 2014
 <p>初始化并配置<code>octopress</code>的主题，如果后边没跟主题名参数，则安装默认主题。该命令主要做了如下操作：</p>
 
 <ol>
-  <li>首先根据octopress是否已有<code>source</code>目录或<code>sass</code>目录来判断是否已安装了主题，如果已安装，则询问用户是否覆盖已有主题。如果否，则流程终止(<code>abort</code>)。</li>
+  <li>首先根据 octopress 是否已有<code>source</code>目录或<code>sass</code>目录来判断是否已安装了主题，如果已安装，则询问用户是否覆盖已有主题。如果否，则流程终止(<code>abort</code>)。</li>
   <li>该命令后边是可以再加一个可选的主题名的，否则会使用默认主题<code>Classic</code>。</li>
   <li>创建<code>source</code>目录，并将<code>"#{themes_dir}/#{theme}/source/."</code>目录下的文件拷贝到<code>source</code>目录。</li>
   <li>创建<code>sass</code>目录，并将<code>"#{themes_dir}/#{theme}/sass/."</code>目录下的文件拷贝到<code>sass</code>目录。</li>
@@ -251,7 +251,7 @@ Oct 20th, 2014
 <ol>
   <li>
     <p>要求输入你<code>Github Pages</code>仓库的<code>URL</code>。
-该<code>URL</code>即此步之前你在Github上新建的那个命名格式为<code>username.github.io</code>的仓库的URL。之所以以这样的格式命名该仓库，是因为后边要通过该URL提取出该仓库名(即<code>username.github.io</code>)，以用来配置成你的Github Pages的域名，即你博客的域名。该URL有<code>SSH</code>和<code>HTTPS</code>两种格式，都很容易通过字符串截取拿到子串<code>"username.github.io"</code>。(Github之前使用<code>http://username.github.com</code>作为Github Pages的域名，后来将<code>.com</code>改为了<code>.io</code>，该<code>rake</code>脚本中对此做了兼容处理)。</p>
+该<code>URL</code>即此步之前你在Github上新建的那个命名格式为<code>username.github.io</code>的仓库的URL。之所以以这样的格式命名该仓库，是因为后边要通过该URL提取出该仓库名(即<code>username.github.io</code>)，以用来配置成你的Github Pages的域名，即你博客的域名。该URL有<code>SSH</code>和<code>HTTPS</code>两种格式，都很容易通过字符串截取拿到子串<code>"username.github.io"</code>。( Github 之前使用<code>http://username.github.com</code>作为 Github Pages 的域名，后来将<code>.com</code>改为了<code>.io</code>，该<code>rake</code>脚本中对此做了兼容处理)。</p>
   </li>
   <li>
     <p>将指向<code>imathis/octopress</code>的远程库的名字由<code>origin</code>改为<code>octopress</code>。</p>
@@ -309,14 +309,14 @@ Oct 20th, 2014
  * source
 </code></pre>
 
-    <p><strong>NOTE:</strong> 理解这里很重要，关于这里为什么要这样做，要结合下边的6一起理解。前边已经提到，用户或组织的Github Pages使用master分支作为web服务的公开目录，为你URL为<code>http://username.github.io</code>的Pages提供网站内容(即内容文件)。而当前的本地<code>master</code>分支即整个<code>octopress框架</code>的源码所在的分支。其实本地的<code>master</code>分支就是一个名字为<code>master</code>的<code>指针</code>，它现在指向的是整个octopress框架的源码所在的本地分支。我们这里做的其实是把指向整个octopress框架的源码所在的本地分支的指针的名字由<code>master</code>改为<code>source</code>，把这个<code>master</code>指针名字让出来，让它指向后边6所初始化的用于<code>web访问</code>的<code>octopress/_deploy</code>目录下的本地仓库的主分支。这样，该目录(本地<code>octopress/_deploy</code>目录)下的本地<code>master</code>分支对应的就是<code>Github Pages</code>远程库的<code>master</code>分支。</p>
+    <p><strong>NOTE:</strong> 理解这里很重要，关于这里为什么要这样做，要结合下边的6一起理解。前边已经提到，用户或组织的 Github Pages 使用 master 分支作为 web 服务的公开目录，为你URL为<code>http://username.github.io</code>的 Pages 提供网站内容(即内容文件)。而当前的本地<code>master</code>分支即整个<code>octopress框架</code>的源码所在的分支。其实本地的<code>master</code>分支就是一个名字为<code>master</code>的<code>指针</code>，它现在指向的是整个 octopress 框架的源码所在的本地分支。我们这里做的其实是把指向整个 octopress 框架的源码所在的本地分支的指针的名字由<code>master</code>改为<code>source</code>，把这个<code>master</code>指针名字让出来，让它指向后边6所初始化的用于<code>web访问</code>的<code>octopress/_deploy</code>目录下的本地仓库的主分支。这样，该目录(本地<code>octopress/_deploy</code>目录)下的本地<code>master</code>分支对应的就是<code>Github Pages</code>远程库的<code>master</code>分支。</p>
   </li>
   <li>
-    <p>根据前边所提供的Github Pages仓库的URL来配置博客的URL
-从前边所提供的SSH或HTTPS类型的URL中截取仓库名<code>username.github.io</code>，然后从本地的octopress目录下读取博客的配置文件<code>_config.yml</code>，将其<code>url</code>参数值改为<code>http://username.github.io</code>。</p>
+    <p>根据前边所提供的 Github Pages 仓库的 URL 来配置博客的 URL
+从前边所提供的 SSH 或 HTTPS 类型的 URL 中截取仓库名<code>username.github.io</code>，然后从本地的 octopress 目录下读取博客的配置文件<code>_config.yml</code>，将其<code>url</code>参数值改为<code>http://username.github.io</code>。</p>
   </li>
   <li>
-    <p>在本地<code>octopress</code>目录下新建<code>_deploy</code>目录，并对其进行Git初始化，然后添加<code>Github Pages</code>仓库作为其远程仓库。</p>
+    <p>在本地<code>octopress</code>目录下新建<code>_deploy</code>目录，并对其进行 Git 初始化，然后添加<code>Github Pages</code>仓库作为其远程仓库。</p>
 
     <p>NOTE:此时已经有了两个本地仓库(这个和前边3提到的整个<code>octopress</code>目录(即<code>octopress框架</code>)所对应的本地仓库)指向<code>Github Pages</code>仓库作为其远程仓库了，分别作为其<code>master</code>分支和<code>source</code>分支。</p>
 
@@ -324,7 +324,7 @@ Oct 20th, 2014
  $ git init
  $ git add .
  $ git commit -m "Octopress init"
- # 添加Github Pages仓库作为其远程仓库
+ # 添加 Github Pages 仓库作为其远程仓库
  $ git remote add origin git@github.com:matrixzk/matrixzk.github.io.git
 </code></pre>
 
@@ -354,14 +354,14 @@ Oct 20th, 2014
 
 <h3 id="rake-deploy">rake deploy</h3>
 
-<p>将站点部署到服务器，即发布站点到互联网。由于<code>_deploy</code>目录所代表的本地仓库的<code>master</code>分支对应<code>Github Pages远程仓库</code>的<code>master</code>分支，该分支目录的内容即<code>Github Pages</code>在互联网上供公开访问的站点内容。因此这里做的主要就是将新写的博客文章copy到<code>_deploy</code>目录下，然后将此修改<code>push</code>到<code>Github Pages</code>远程库的<code>master</code>分支。</p>
+<p>将站点部署到服务器，即发布站点到互联网。由于<code>_deploy</code>目录所代表的本地仓库的<code>master</code>分支对应<code>Github Pages 远程仓库</code>的<code>master</code>分支，该分支目录的内容即<code>Github Pages</code>在互联网上供公开访问的站点内容。因此这里做的主要就是将新写的博客文章copy到<code>_deploy</code>目录下，然后将此修改<code>push</code>到<code>Github Pages</code>远程库的<code>master</code>分支。</p>
 
 <ol>
   <li>首先查看是否存在预览模式的博客(它们不该被发布)，如果有则删除，并在此重新执行<code>rake generate</code>。</li>
   <li>将<code>source</code>目录下的文件拷贝到<code>public</code>目录下。</li>
   <li>进入<code>_deploy</code>目录，执行<code>git pull</code>操作。</li>
   <li>将<code>public</code>目录的内容拷贝到<code>_deploy</code>目录下。</li>
-  <li>将<code>_deploy</code>目录所对应的本地master分支的修改<code>push</code>到Github Pages远程库的master分支，即将Github Pages即你的博客部署到了互联网。这里主要做了如下操作。</li>
+  <li>将<code>_deploy</code>目录所对应的本地 master 分支的修改<code>push</code>到 Github Pages 远程库的 master 分支，即将 Github Pages 即你的博客部署到了互联网。这里主要做了如下操作。</li>
 </ol>
 
 <div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
@@ -373,9 +373,9 @@ Oct 20th, 2014
 </span><span class="line">$ git commit -m "Site updated at #Time.now(即当前时间)"
 </span><span class="line">$ git push origin master  # Pushing generated _deploy website</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<h3 id="github-pagessource">生成Github Pages远程库的source分支</h3>
+<h3 id="github-pages-source-">生成 Github Pages远程库的 source 分支</h3>
 
-<p>搭建过程的最后一步是将你本地<code>octopress框架</code>的源码(即本地的<code>source</code>分支)<code>push</code>到<code>Github Pages</code>远程库。注意，此步之前Github Pages远程库还不存在<code>source</code>分支。</p>
+<p>搭建过程的最后一步是将你本地<code>octopress框架</code>的源码(即本地的<code>source</code>分支)<code>push</code>到<code>Github Pages</code>远程库。注意，此步之前 Github Pages 远程库还不存在<code>source</code>分支。</p>
 
 <div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
@@ -386,7 +386,7 @@ Oct 20th, 2014
 </span><span class="line">git commit -m 'your message'
 </span><span class="line">git push origin source # 注意，此时你本地的source分支push到远程库，之后远程库会生成一个source分支</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p><strong>NOTE:</strong> 这里所做的是将本地<code>octopress</code>目录下的本地<code>source</code>分支(前边已将该默认分支名由<code>master</code>改为<code>source</code>)<code>push</code>到Github Pages远程库，这样，<code>Github Pages</code>远程库就生成了<code>source</code>分支。至此，<code>Github Pages</code>远程库有了两个分支，即<code>master</code>分支和<code>source</code>分支。这里的<code>master</code>分支所对应的本地分支为本地的<code>octopress/_deploy</code>目录下本地仓库的<code>master</code>分支，主要存放部署完毕生成的供互联网访问的<code>Github Pages</code>站点(即你的博客站点)的内容。<code>source</code>分支所对应的本地分支为本地的整个<code>octopress</code>目录下本地仓库的<code>source</code>分支(即该本地库的主分支，之前将其名字有<code>master</code>改为了<code>source</code>，缘由前边已详述)，主要存放整个<code>octopress框架</code>源码的内容。</p>
+<p><strong>NOTE:</strong> 这里所做的是将本地<code>octopress</code>目录下的本地<code>source</code>分支(前边已将该默认分支名由<code>master</code>改为<code>source</code>)<code>push</code>到 Github Pages 远程库，这样，<code>Github Pages</code>远程库就生成了<code>source</code>分支。至此，<code>Github Pages</code>远程库有了两个分支，即<code>master</code>分支和<code>source</code>分支。这里的<code>master</code>分支所对应的本地分支为本地的<code>octopress/_deploy</code>目录下本地仓库的<code>master</code>分支，主要存放部署完毕生成的供互联网访问的<code>Github Pages</code>站点(即你的博客站点)的内容。<code>source</code>分支所对应的本地分支为本地的整个<code>octopress</code>目录下本地仓库的<code>source</code>分支(即该本地库的主分支，之前将其名字有<code>master</code>改为了<code>source</code>，缘由前边已详述)，主要存放整个<code>octopress框架</code>源码的内容。</p>
 
 <h3 id="rake-newposthello-world">rake new_post[“Hello World”]</h3>
 
@@ -500,7 +500,7 @@ Oct 20th, 2014 •
 <!--
 	<div class="ds-thread" data-thread-key="请将此处替换成文章在你的站点中的ID" data-title="请替换成文章的标题" data-url="请替换成文章的网址"></div>
 <!-->
-	<div class="ds-thread" data-thread-key="/blog/20141020/octopress-setup-and-analysis" data-title="使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析" data-url="http://matrixzk.github.io/blog/20141020/octopress-setup-and-analysis/"></div>
+	<div class="ds-thread" data-thread-key="/blog/20141020/octopress-setup-and-analysis" data-title="使用 Octopress 2.0 搭建基于 Github Pages 个人博客的详细过程及原理分析" data-url="http://matrixzk.github.io/blog/20141020/octopress-setup-and-analysis/"></div>
 <!-- 多说评论框 end -->
 <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
 <script type="text/javascript">
@@ -527,19 +527,23 @@ var duoshuoQuery = {short_name:"matrixzk"};
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/20141104/git-flow-model/">一个完美的Git分支管理模型(Git工作流)</a>
+        <a href="/blog/20141113/memory-management-3-autoreleasePool/">OC内存管理那些事儿(3)：使用自动释放池块</a>
       </li>
     
       <li class="post">
-        <a href="/blog/20141103/octopress-custom-config/">Octopress 主题修改小记</a>
+        <a href="/blog/20141111/memory-management-2-practical/">OC内存管理那些事儿(2)：内存管理实践</a>
       </li>
     
       <li class="post">
-        <a href="/blog/20141028/ios8-day1-swift-overview/">iOS8 Day-by-Day :: Day1 :: Swift概述</a>
+        <a href="/blog/20141109/memory-management-1-policy/">OC内存管理那些事儿(1)：内存管理策略</a>
       </li>
     
       <li class="post">
-        <a href="/blog/20141020/octopress-setup-and-analysis/">使用Octopress搭建基于Github Pages个人博客的详细过程及原理分析</a>
+        <a href="/blog/20141107/memory-management-0-introduction/">OC内存管理那些事儿(0)：关于内存管理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141104/git-flow-model/">一个完美的 Git 分支管理模型 (Git工作流)</a>
       </li>
     
   </ul>
@@ -551,6 +555,7 @@ var duoshuoQuery = {short_name:"matrixzk"};
     <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
 <li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
 <li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
+<li class='category'><a href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理 (4)</a></li>
 
   </ul>
 </section>

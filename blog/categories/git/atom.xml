@@ -4,7 +4,7 @@
   <title><![CDATA[分类：git | Matrixzk's Blog]]></title>
   <link href="http://matrixzk.github.io/blog/categories/git/atom.xml" rel="self"/>
   <link href="http://matrixzk.github.io/"/>
-  <updated>2014-11-13T21:24:16+08:00</updated>
+  <updated>2014-12-29T15:47:16+08:00</updated>
   <id>http://matrixzk.github.io/</id>
   <author>
     <name><![CDATA[matrixzk]]></name>
@@ -14,11 +14,11 @@
 
   
   <entry>
-    <title type="html"><![CDATA[一个完美的Git分支管理模型(Git工作流)]]></title>
+    <title type="html"><![CDATA[一个完美的 Git 分支管理模型 (Git工作流)]]></title>
     <link href="http://matrixzk.github.io/blog/20141104/git-flow-model/"/>
     <updated>2014-11-04T16:08:51+08:00</updated>
     <id>http://matrixzk.github.io/blog/20141104/git-flow-model</id>
-    <content type="html"><![CDATA[<p>众所周知，<a href="http://git-scm.com/">Git</a>是目前最优秀的版本控制工具。但很多团队在使用Git进行协作开发的过程中，并没有形成一个清晰规范的流程。本文的作者<a href="http://nvie.com/">Vincent Driessen</a>向我们介绍了一个相对比较完美的分支管理策略，依照这个策略基本可以保证团队开发和版本发布有条不紊得进行。Vincent Driessen还据此实现了一个Git扩展集<a href="https://github.com/nvie/gitflow">git-flow</a>，它为本文所介绍的分支管理模型提供了一些较高层次的<code>repository operations</code>(库操作)。其本质是对下文所述的相关Git命令集进行进一步封装，并提供一些友好的命令行提示，具体可参考<a href="http://danielkummer.github.io/git-flow-cheatsheet/index.zh_CN.html">git-flow备忘清单</a>。本文译自<a href="http://nvie.com/posts/a-successful-git-branching-model/">A successful Git branching model</a>，推荐原汁原味的阅读。</p>
+    <content type="html"><![CDATA[<p>众所周知，<a href="http://git-scm.com/">Git</a> 是目前最优秀的版本控制工具。但很多团队在使用Git进行协作开发的过程中，并没有形成一个清晰规范的流程。本文的作者<a href="http://nvie.com/"> Vincent Driessen </a>向我们介绍了一个相对比较完美的分支管理策略，依照这个策略基本可以保证团队开发和版本发布有条不紊得进行。Vincent Driessen还据此实现了一个 Git 扩展集<a href="https://github.com/nvie/gitflow"> git-flow </a>，它为本文所介绍的分支管理模型提供了一些较高层次的<code>repository operations</code>(库操作)。其本质是对下文所述的相关Git命令集进行进一步封装，并提供一些友好的命令行提示，具体可参考<a href="http://danielkummer.github.io/git-flow-cheatsheet/index.zh_CN.html"> git-flow 备忘清单</a>。本文译自<a href="http://nvie.com/posts/a-successful-git-branching-model/"> A successful Git branching model </a>，推荐原汁原味的阅读。</p>
 
 <!-- more -->
 
