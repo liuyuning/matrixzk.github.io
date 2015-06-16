@@ -1,0 +1,364 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题 - Matrixzk&#8217;s Blog</title>
+  <meta name="author" content="matrixzk">
+
+  
+  <meta name="description" content="有这样一个场景。现在想给一个 ViewController 容器增加一个手势，触发前进后退的导航功能。正常情况下，这里用 UIPanGestureRecognizer 就可以了。但是存在一个问题，如果当前界面有一个可以左右滑动的 ScrollView 时，比如是一个被双指放大了的 WebView， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://matrixzk.github.io/blog/20150110/resolve-gesture-conflicts">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Matrixzk's Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <!--
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <!-->
+  <script src="//ajax.useso.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<!--
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<!-->
+
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-56261327-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Matrixzk&#8217;s Blog</a></h1>
+  
+    <h2>keep moving</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="订阅RSS">RSS</a></li>
+  
+</ul>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/about/about.html">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题</h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Jan 10th, 2015
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>有这样一个场景。现在想给一个 ViewController 容器增加一个手势，触发前进后退的导航功能。正常情况下，这里用 UIPanGestureRecognizer 就可以了。但是存在一个问题，如果当前界面有一个可以左右滑动的 ScrollView 时，比如是一个被双指放大了的 WebView，那么所加的这个 pan 手势就会被 ScrollView 的内部手势 (UIScrollViewPanGestureRecognizer 类型) 给屏蔽掉而不会被触发。于是这里又添加了两个 UIScreenEdgePanGestureRecognizer 边缘滑动手势，以在上述情况下通过触发边缘滑动手势进行前进后退导航。这时问题就来了，这几个手势势必会存在冲突问题 (其实真实项目中这里还有一个自定义的上下滑动手势，不过这里就先不提它了，主要说说上述两个手势的冲突问题)。下面就来解决这个问题。</p>
+
+<!-- more -->
+
+<p>首先，在 iOS 中，默认情况下在同一时刻只能有一个手势被识别，如果想改变这种默认行为，要用到 UIGestureRecognizerDelegate 协议的方法：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="c1">// called when the recognition of one of gestureRecognizer or otherGestureRecognizer would be blocked by the other</span>
+</span><span class="line"><span class="c1">// return YES to allow both to recognize simultaneously. the default implementation returns NO (by default no two gestures can be recognized simultaneously)</span>
+</span><span class="line"><span class="c1">//</span>
+</span><span class="line"><span class="c1">// note: returning YES is guaranteed to allow simultaneous recognition. returning NO is not guaranteed to prevent simultaneous recognition, as the other gesture&#39;s delegate may return YES</span>
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldRecognizeSimultaneouslyWithGestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">otherGestureRecognizer</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>当一个手势识别器对一个手势的解析将要阻塞另一个手势识别器识别其手势时，该方法将被调用。该方法默认是返回 NO。如果想让两个手势识别器同时对其各自手势进行解析，返回 YES 即可。注意，该方法返回 YES 能确保当前两个手势同时被识别，但是，返回 NO 并不能确保阻止当前两个手势被同时识别，因为另一个手势识别器的该代理方法可能会返回 YES。该方法的官方文档描述很模糊，我的理解是，在代理的所有手势在被识别之前调用该方法，两两比较确定哪些手势可以同时被触发。</p>
+
+<p>针对我们的问题，有 pan 手势和边缘滑动手势两类。这里该允许哪个手势可以和其它手势同时被识别呢？都可以吗？其实只能选边缘滑动手势。因为如果这里允许 pan 手势和其他手势同时被识别的话，它就和文章开头所描述的 ScrollView 的左右滑动手势冲突，也就是两个手势会被同时识别，当左右滑动时界面被滑动的同时也触发了前进后退导航操作，根本不能愉快的浏览当前界面内容。而边缘滑动手势只有在边缘滑动时才会被触发，就不存在了上述的手势冲突问题。代码如下：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldRecognizeSimultaneouslyWithGestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">otherGestureRecognizer</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="k">return</span> <span class="p">[</span><span class="n">gestureRecognizer</span> <span class="nl">isKindOfClass</span><span class="p">:[</span><span class="bp">UIScreenEdgePanGestureRecognizer</span> <span class="k">class</span><span class="p">]];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>接下来的问题是，允许边缘滑动手势可以和其他手势同时执行后，边缘滑动手势和左右滑动手势会同时执行，即在边缘滑动时，左右滑动手势的触发方法也会执行，由于这两个手势的触发方法基本相同，这相当于同一个触发方法被执行了两遍，肯定是不行的。</p>
+
+<p>UIGestureRecognizer 有这样一个方法 <code>requireGestureRecognizerToFail:</code> ，比如：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">[</span><span class="n">gestureRecognizerA</span> <span class="nl">requireGestureRecognizerToFail</span><span class="p">:</span><span class="n">gestureRecognizerB</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>它的作用是，gestureRecognizerA 的手势在进入 Began 状态之前，需要先把该方法参数所指定的 gestureRecognizerB 的手势给 Fail 掉。当 gestureRecognizerA 在等待 gestureRecognizerB 进入 Failed 状态时，gestureRecognizerA 保持在 Possible 状态。如果 gestureRecognizerB 被 Fail 掉了，gestureRecognizerA 就开始分析当前的 touch 事件，并过渡到下一个状态。另一方面，如果 gestureRecognizerB 过渡到了 Recognized 或 Began 状态，gestureRecognizerA 就进入到 Failed 状态。上述涉及到手势的几种状态转换，详细过程参考这里 <a href="https://developer.apple.com/library/ios/documentation/EventHandling/Conceptual/EventHandlingiPhoneOS/GestureRecognizer_basics/GestureRecognizer_basics.html#//apple_ref/doc/uid/TP40009541-CH2-SW22">Gesture Recognizers Operate in a Finite State Machine</a>。 </p>
+
+<font color="blue"><b>我的理解是，当前所有被注册代理的手势在进入 Possible 状态之后，全部被阻塞，然后两两判断之间的依赖关系，最终决定哪些手势可以被触发，或者同时被触发，进而进入 Began 状态(连续手势)或 Recognized 状态(离散手势)，开始执行触发方法。这只是我的个人理解，并未在官方文档上见到详细说明。</b></font>
+<p><br /></p>
+
+<p>回到我们的问题，根据上边的解释，让边缘滑动手势发送 <code>requireGestureRecognizerToFail:</code> 消息，左右滑动手势作为参数传进去，即在边缘滑动手势处于 Possible 状态 被触发之前，先把左右滑动手势 Fail 掉，然后边缘滑动手势进入 Began 状态，进而触发。</p>
+
+<p>到目前为止，文章开头所提的问题已经解决了。</p>
+
+<p>在实际的项目中因为还有动画等一些其他逻辑处理，所以还用到了 UIGestureRecognizerDelegate 的其他几个代理方法，这里大概提一下。</p>
+
+<ul>
+  <li>代理方法 <code>gestureRecognizer: shouldReceiveTouch:</code></li>
+</ul>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="c1">// called before touchesBegan:withEvent: is called on the gesture recognizer for a new touch. return NO to prevent the gesture recognizer from seeing this touch</span>
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldReceiveTouch:</span><span class="p">(</span><span class="bp">UITouch</span> <span class="o">*</span><span class="p">)</span><span class="nv">touch</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>该方法会在 <code>touchesBegan:withEvent:</code> 被调用之前被触发，如果返回 NO，这里的 gestureRecognizer 就看不到该 touch 事件了，也就是在这里的 gestureRecognizer 的“监控范围”内，在最接近源头的地方阻止了这个 touch 事件的传递，就像什么都没发生过。</p>
+
+<ul>
+  <li>代理方法 <code>gestureRecognizerShouldBegin</code></li>
+</ul>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="c1">// called when a gesture recognizer attempts to transition out of UIGestureRecognizerStatePossible. returning NO causes it to transition to UIGestureRecognizerStateFailed</span>
+</span><span class="line">
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizerShouldBegin:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>当一个手势将要尝试离开 UIGestureRecognizerStatePossible 进入下一个状态时，该方法被调用。这里返回 NO 会导致该手势进入 UIGestureRecognizerStateFailed 状态。默认返回 YES。注意该方法与上边那个方法的区别。上边的方法 <code>gestureRecognizer:shouldReceiveTouch:</code> 是在手势识别器 gestureRecognizer 开始识别手势之前被调用，即 gestureRecognizer 还未开始对手势进行分析。而这个方法被调用时，gestureRecognizer 已经开始对手势进行分析识别，且在将要尝试离开 UIGestureRecognizerStatePossible 进入下一个状态时，再给一次拦截机会。</p>
+
+<ul>
+  <li>最后两个代理方法：</li>
+</ul>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="c1">// called once per attempt to recognize, so failure requirements can be determined lazily and may be set up between recognizers across view hierarchies</span>
+</span><span class="line"><span class="c1">// return YES to set up a dynamic failure requirement between gestureRecognizer and otherGestureRecognizer</span>
+</span><span class="line"><span class="c1">//</span>
+</span><span class="line"><span class="c1">// note: returning YES is guaranteed to set up the failure requirement. returning NO does not guarantee that there will not be a failure requirement as the other gesture&#39;s counterpart delegate or subclass methods may return YES</span>
+</span><span class="line">
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldRequireFailureOfGestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">otherGestureRecognizer</span> <span class="n">NS_AVAILABLE_IOS</span><span class="p">(</span><span class="mi">7</span><span class="n">_0</span><span class="p">);</span>
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldBeRequiredToFailByGestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">otherGestureRecognizer</span> <span class="n">NS_AVAILABLE_IOS</span><span class="p">(</span><span class="mi">7</span><span class="n">_0</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这两个方法和手势的 <code>requireGestureRecognizerToFail:</code> 方法的作用类似，但会动态决定两个手势的互斥关系。</p>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<!--
+<span class="byline author vcard">Posted by <span class="fn">matrixzk</span></span>
+<!-->
+
+<span class="byline author vcard"><span class="fn">matrixzk •
+      
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Jan 10th, 2015 •
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/ios/'>ios</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/20141220/crash-file-analysis/" title="Previous Post: 简述 Crash 文件分析流程">&larr; 简述 Crash 文件分析流程</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/20150122/load-image-encoded-with-base64/" title="Next Post: 在 iOS 中展示 base64 编码的图片">在 iOS 中展示 base64 编码的图片 &rarr;</a>
+        <!-- &raquo; -->
+      
+    </p>
+  </footer>
+</article>
+<!--
+
+<!-->
+
+
+  <section>
+   <!-- 多说评论框 start -->
+<!--
+	<div class="ds-thread" data-thread-key="请将此处替换成文章在你的站点中的ID" data-title="请替换成文章的标题" data-url="请替换成文章的网址"></div>
+<!-->
+	<div class="ds-thread" data-thread-key="/blog/20150110/resolve-gesture-conflicts" data-title="解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题" data-url="http://matrixzk.github.io/blog/20150110/resolve-gesture-conflicts/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"matrixzk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+  </section>
+ 
+  
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最新文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/20150122/load-image-encoded-with-base64/">在 iOS 中展示 Base64 编码的图片</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20150110/resolve-gesture-conflicts/">解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141220/crash-file-analysis/">简述 Crash 文件分析流程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141113/memory-management-3-autoreleasePool/">OC内存管理那些事儿(3)：使用自动释放池块</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141111/memory-management-2-practical/">OC内存管理那些事儿(2)：内存管理实践</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+  <br/>
+  <h1>分类目录</h1>
+  <ul id="categories">
+    <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
+<li class='category'><a href='/blog/categories/ios/'>ios (2)</a></li>
+<li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
+<li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
+<li class='category'><a href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理 (4)</a></li>
+
+  </ul>
+</section>
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - matrixzk -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+  <!--返回顶部开始-->
+<div id="full" style="width:0px; height:0px; position:fixed; right:60px; bottom:60px; z-index:100; text-align:right; background-color:transparent; cursor:pointer;">
+        <a href="#" onclick="goTop();return false;"><img src="/images/top.png" border=0 alt="返回顶部"></a>
+</div>
+<script src="/javascripts/goTop.js" type="text/javascript"></script>
+<!--返回顶部结束-->
+</body>
+</html>
+

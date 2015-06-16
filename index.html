@@ -9,7 +9,7 @@
   <meta name="author" content="matrixzk">
 
   
-  <meta name="description" content="">
+  <meta name="description" content="做网页前端的同学有时为了减少 Http 的请求数量，经常会把一些需要重复使用并且比较小的图片根据 Data URI 协议，经 base64 编码成字符串格式来储存。 ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,7 +58,7 @@
   <header role="banner"><hgroup>
   <h1><a href="/">Matrixzk&#8217;s Blog</a></h1>
   
-    <h2>Do more do better.</h2>
+    <h2>keep moving</h2>
   
 </hgroup>
 
@@ -87,7 +87,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/20150507/test-page/">Test Page</a></h1>
+      <h1 class="entry-title"><a href="/blog/20150122/load-image-encoded-with-base64/">在 iOS 中展示 Base64 编码的图片</a></h1>
     
     
       <p class="meta">
@@ -100,18 +100,96 @@
 
 
 <!-->
-May 7th, 2015
+Jan 22nd, 2015
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"></div>
+  <div class="entry-content"><p>做网页前端的同学有时为了减少 Http 的请求数量，经常会把一些需要重复使用并且比较小的图片根据 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/data_URIs">Data URI</a> 协议，经 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码成字符串格式来储存。</p>
+
+</div>
   
   
     <footer>
-      <a rel="full-article" href="/blog/20150507/test-page/">阅读全文 &rarr;</a>
+      <a rel="full-article" href="/blog/20150122/load-image-encoded-with-base64/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/20150110/resolve-gesture-conflicts/">解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题</a></h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Jan 10th, 2015
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>有这样一个场景。现在想给一个 ViewController 容器增加一个手势，触发前进后退的导航功能。正常情况下，这里用 UIPanGestureRecognizer 就可以了。但是存在一个问题，如果当前界面有一个可以左右滑动的 ScrollView 时，比如是一个被双指放大了的 WebView，那么所加的这个 pan 手势就会被 ScrollView 的内部手势 (UIScrollViewPanGestureRecognizer 类型) 给屏蔽掉而不会被触发。于是这里又添加了两个 UIScreenEdgePanGestureRecognizer 边缘滑动手势，以在上述情况下通过触发边缘滑动手势进行前进后退导航。这时问题就来了，这几个手势势必会存在冲突问题 (其实真实项目中这里还有一个自定义的上下滑动手势，不过这里就先不提它了，主要说说上述两个手势的冲突问题)。下面就来解决这个问题。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/20150110/resolve-gesture-conflicts/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/20141220/crash-file-analysis/">简述 Crash 文件分析流程</a></h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Dec 20th, 2014
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>虽然现在已经有很多第三方的服务能帮你分析线上 App 的 Crash 文件，但有时还是难免要对单独某个 Crash 文件做分析，本文就是来介绍一下这个流程。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/20141220/crash-file-analysis/">阅读全文 &rarr;</a>
     </footer>
   
 
@@ -397,50 +475,25 @@ Oct 28th, 2014
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/20141020/octopress-setup-and-analysis/">使用 Octopress 2.0 搭建基于 Github Pages 个人博客的详细过程及原理分析</a></h1>
-    
-    
-      <p class="meta">
-        
-<!-- post.date_time_html -->
-
-
-
-<!--
-
-
-<!-->
-Oct 20th, 2014
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>前两天图省事，让一位梦想通过博客改变世界的<strong><a href="http://droidyue.com/">小伙伴</a></strong>帮我搭建了一个基于<a href="https://pages.github.com/"> Github Pages </a>的个人博客，使用的是<a href="http://octopress.org/"> Octopress </a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据 Octopress 的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作(后来发现这很可能是由于 Octopress 升级到 2.0 之后目录结构有所调整)，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
-
-<p>PS.以下内容新手可以选择性参考，大神请绕道，谢谢 :]</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/20141020/octopress-setup-and-analysis/">阅读全文 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
+    <!--
+    
+      <a class="prev" href="/posts/2">&larr; 最近</a>
     
     <a href="/blog/archives">所有文章</a>
     
+    <!-->
+    
+    
+    
+
+    <a href="/blog/archives">所有文章</a>
+
+    
+    <a class="next" href="/posts/2">更早 &rarr;</a>
+    
+    
+
   </div>
 </div>
 <aside class="sidebar">
@@ -450,7 +503,15 @@ Oct 20th, 2014
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/20150507/test-page/">Test Page</a>
+        <a href="/blog/20150122/load-image-encoded-with-base64/">在 iOS 中展示 Base64 编码的图片</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20150110/resolve-gesture-conflicts/">解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141220/crash-file-analysis/">简述 Crash 文件分析流程</a>
       </li>
     
       <li class="post">
@@ -461,14 +522,6 @@ Oct 20th, 2014
         <a href="/blog/20141111/memory-management-2-practical/">OC内存管理那些事儿(2)：内存管理实践</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/20141109/memory-management-1-policy/">OC内存管理那些事儿(1)：内存管理策略</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/20141107/memory-management-0-introduction/">OC内存管理那些事儿(0)：关于内存管理</a>
-      </li>
-    
   </ul>
 </section>
 <section>
@@ -476,6 +529,7 @@ Oct 20th, 2014
   <h1>分类目录</h1>
   <ul id="categories">
     <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
+<li class='category'><a href='/blog/categories/ios/'>ios (2)</a></li>
 <li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
 <li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
 <li class='category'><a href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理 (4)</a></li>

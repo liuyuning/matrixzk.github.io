@@ -1,0 +1,342 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>在 iOS 中展示 Base64 编码的图片 - Matrixzk&#8217;s Blog</title>
+  <meta name="author" content="matrixzk">
+
+  
+  <meta name="description" content="做网页前端的同学有时为了减少 Http 的请求数量，经常会把一些需要重复使用并且比较小的图片根据 Data URI 协议，经 base64 编码成字符串格式来储存。 背景知识 解决方案一 解决方案二 参考链接 背景知识 Data URI 的语法是这样的： 1
+data:[&lt;mediatype &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://matrixzk.github.io/blog/20150122/load-image-encoded-with-base64">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Matrixzk's Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <!--
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <!-->
+  <script src="//ajax.useso.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<!--
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<!-->
+
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-56261327-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Matrixzk&#8217;s Blog</a></h1>
+  
+    <h2>keep moving</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="订阅RSS">RSS</a></li>
+  
+</ul>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/about/about.html">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">在 iOS 中展示 Base64 编码的图片</h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Jan 22nd, 2015
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>做网页前端的同学有时为了减少 Http 的请求数量，经常会把一些需要重复使用并且比较小的图片根据 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/data_URIs">Data URI</a> 协议，经 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码成字符串格式来储存。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#section">背景知识</a></li>
+  <li><a href="#section-1">解决方案一</a></li>
+  <li><a href="#section-2">解决方案二</a></li>
+  <li><a href="#section-3">参考链接</a></li>
+</ul>
+
+<h2 id="section">背景知识</h2>
+
+<p><code>Data URI</code> 的语法是这样的：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="html"><span class="line">data:[<span class="nt">&lt;mediatype&gt;</span>][;base64],<span class="nt">&lt;data&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这里的 mediatype 是一个 <code>MIME</code> 类型的字符串，比如 <code>image/png</code> 表示 png 格式的图片文件。缺省时其默认值为 <code>text/plain;charset=US-ASCII</code>。当要表示的 data 不是文本时，比如图片、音频、视频文件等，需要对其进行 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码。</p>
+
+<p>举个栗子，用 Data URI 表示一张图片时，大概是这个样子 (这里的 <code>...</code> 为省略的字符) ：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="html"><span class="line">data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAbgAAACOCAYAAABDnh23JlYWR5ccllPAAAAy ... RK5CYII=
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>根据 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码的原理，当看到一堆连续的字符后边跟一或两个 <code>=</code> 时，基本可以确定这是一个经过 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码后得到的字符串。</p>
+
+<p>在 html 中，像下边这样就可以将该图片显示出来了：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="html"><span class="line"><span class="nt">&lt;img</span> <span class="na">src=</span><span class="s">&quot;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAbgAAACOCAYAAABDnh23JlYWR5ccllPAAAAy ... RK5CYII=&quot;</span><span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="section-1">解决方案一</h2>
+
+<p>这里的 Data URI 也可视为是 URL，因此可将其转换为 <code>NSURL</code> ，然后将其转换为 <code>NSData</code> ，最后将其读出为 <code>UIImage</code> ：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="c1">// 这里的变量 dataURIStr 形如字符串 @&quot;data:image/png;base64,iVBORw0KGgoAy ... RK5CYII=&quot;</span>
+</span><span class="line">
+</span><span class="line"><span class="bp">NSURL</span>   <span class="o">*</span><span class="n">imgURL</span>  <span class="o">=</span> <span class="p">[</span><span class="bp">NSURL</span> <span class="nl">URLWithString</span><span class="p">:</span><span class="n">dataURIStr</span><span class="p">];</span>
+</span><span class="line"><span class="bp">NSData</span>  <span class="o">*</span><span class="n">imgData</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSData</span> <span class="nl">dataWithContentsOfURL</span><span class="p">:</span><span class="n">imgURL</span><span class="p">];</span>
+</span><span class="line"><span class="bp">UIImage</span> <span class="o">*</span><span class="n">img</span>     <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageWithData</span><span class="p">:</span><span class="n">imgData</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+<!--
+	上边的'```'后边居然不能跟空行，否则报错Error: Pygments can't parse unknown language: </p> 。。。。真是奇了怪了！！！
+<!-->
+
+<p><strong>此处注意：</strong>上述参数 <code>dataURIStr</code> 必须有协议前缀 <code>data:image/png;base64,</code>，否则就不是一个标准的 Data URI 了，得到的 <code>imgURL</code> 将会为 nil。</p>
+
+<h2 id="section-2">解决方案二</h2>
+
+<p>如果去掉上述协议前缀，剩下的字符串就是一个经 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码后的图片信息，此时可用 iOS7 之后 <code>NSData</code> 新增加的方法 <code>initWithBase64EncodedString: options:</code> 来搞定。它可将 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码的字符串直接转换为 <code>NSData</code> ：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="c1">// 这里的变量 base64ImgStr 形如字符串 @&quot;iVBORw0KGgoAy ... RK5CYII=&quot;，即图片经 base64 编码后所得的字符串</span>
+</span><span class="line">
+</span><span class="line"><span class="bp">NSData</span>  <span class="o">*</span><span class="n">imgData</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSData</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithBase64EncodedString</span><span class="p">:</span><span class="n">base64ImgStr</span> <span class="nl">options</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line"><span class="bp">UIImage</span> <span class="o">*</span><span class="n">img</span>     <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageWithData</span><span class="p">:</span><span class="n">imgData</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="section-3">参考链接</h2>
+
+<ul>
+  <li><a href="http://stackoverflow.com/questions/1366837/how-to-display-a-base64-image-within-a-uiimageview">How to display a base64 image within a UIImageView?</a> <br /></li>
+  <li><a href="http://www.zhangxinxu.com/wordpress/2012/04/base64-url-image-%E5%9B%BE%E7%89%87-%E9%A1%B5%E9%9D%A2%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">小tip: base64: URL 背景图片与 web 页面性能优化</a></li>
+  <li><a href="http://www.webhek.com/data-url">Data URL 和图片</a></li>
+  <li><a href="http://blogger.gtwang.org/2013/09/minimizing-http-request-using-data-uri.html">使用 DATA URI 將圖片以 Base64 編碼並內崁至網頁中，加速載入速度</a></li>
+</ul>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<!--
+<span class="byline author vcard">Posted by <span class="fn">matrixzk</span></span>
+<!-->
+
+<span class="byline author vcard"><span class="fn">matrixzk •
+      
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Jan 22nd, 2015 •
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/ios/'>ios</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/20150110/resolve-gesture-conflicts/" title="Previous Post: 解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题">&larr; 解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题</a>
+      
+      
+    </p>
+  </footer>
+</article>
+<!--
+
+<!-->
+
+
+  <section>
+   <!-- 多说评论框 start -->
+<!--
+	<div class="ds-thread" data-thread-key="请将此处替换成文章在你的站点中的ID" data-title="请替换成文章的标题" data-url="请替换成文章的网址"></div>
+<!-->
+	<div class="ds-thread" data-thread-key="/blog/20150122/load-image-encoded-with-base64" data-title="在 iOS 中展示 base64 编码的图片" data-url="http://matrixzk.github.io/blog/20150122/load-image-encoded-with-base64/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"matrixzk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+  </section>
+ 
+  
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最新文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/20150122/load-image-encoded-with-base64/">在 iOS 中展示 Base64 编码的图片</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20150110/resolve-gesture-conflicts/">解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141220/crash-file-analysis/">简述 Crash 文件分析流程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141113/memory-management-3-autoreleasePool/">OC内存管理那些事儿(3)：使用自动释放池块</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141111/memory-management-2-practical/">OC内存管理那些事儿(2)：内存管理实践</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+  <br/>
+  <h1>分类目录</h1>
+  <ul id="categories">
+    <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
+<li class='category'><a href='/blog/categories/ios/'>ios (2)</a></li>
+<li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
+<li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
+<li class='category'><a href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理 (4)</a></li>
+
+  </ul>
+</section>
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - matrixzk -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+  <!--返回顶部开始-->
+<div id="full" style="width:0px; height:0px; position:fixed; right:60px; bottom:60px; z-index:100; text-align:right; background-color:transparent; cursor:pointer;">
+        <a href="#" onclick="goTop();return false;"><img src="/images/top.png" border=0 alt="返回顶部"></a>
+</div>
+<script src="/javascripts/goTop.js" type="text/javascript"></script>
+<!--返回顶部结束-->
+</body>
+</html>
+

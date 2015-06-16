@@ -3,9 +3,25 @@
   
   
   <url>
-    <loc>http://matrixzk.github.io/blog/20150507/test-page/</loc>
+    <loc>http://matrixzk.github.io/blog/20150122/load-image-encoded-with-base64/</loc>
     
-    <lastmod>2015-05-07T15:16:14+08:00</lastmod>
+    <lastmod>2015-01-22T16:31:26+08:00</lastmod>
+    
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>http://matrixzk.github.io/blog/20150110/resolve-gesture-conflicts/</loc>
+    
+    <lastmod>2015-01-10T20:14:40+08:00</lastmod>
+    
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>http://matrixzk.github.io/blog/20141220/crash-file-analysis/</loc>
+    
+    <lastmod>2014-12-20T16:05:12+08:00</lastmod>
     
     <priority>0.8</priority>
   </url>
@@ -77,28 +93,28 @@
   
   <url>
     <loc>http://matrixzk.github.io/about/about.html</loc>
-    <lastmod>2015-05-08T10:39:59+08:00</lastmod>
+    <lastmod>2015-06-16T10:20:27+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://matrixzk.github.io/blog/archives/</loc>
-    <lastmod>2015-05-08T10:39:59+08:00</lastmod>
+    <lastmod>2015-06-16T10:20:27+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://matrixzk.github.io/</loc>
-    <lastmod>2015-05-08T10:39:59+08:00</lastmod>
+    <lastmod>2015-06-16T10:20:27+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   
   <url>
     <loc>http://matrixzk.github.io/blog/categories/</loc>
-    <lastmod>2015-05-08T10:39:59+08:00</lastmod>
+    <lastmod>2015-06-16T10:20:27+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

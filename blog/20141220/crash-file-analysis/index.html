@@ -1,0 +1,394 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>简述 Crash 文件分析流程 - Matrixzk&#8217;s Blog</title>
+  <meta name="author" content="matrixzk">
+
+  
+  <meta name="description" content="虽然现在已经有很多第三方的服务能帮你分析线上 App 的 Crash 文件，但有时还是难免要对单独某个 Crash 文件做分析，本文就是来介绍一下这个流程。 测试环境 符号化 Crash 文件 方法一 方法二 方法三 关于 App 和 .dSYM 文件的 uuid 测试环境 前提：App 提交 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://matrixzk.github.io/blog/20141220/crash-file-analysis">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Matrixzk's Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <!--
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <!-->
+  <script src="//ajax.useso.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<!--
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<!-->
+
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-56261327-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Matrixzk&#8217;s Blog</a></h1>
+  
+    <h2>keep moving</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="订阅RSS">RSS</a></li>
+  
+</ul>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/about/about.html">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">简述 Crash 文件分析流程</h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Dec 20th, 2014
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>虽然现在已经有很多第三方的服务能帮你分析线上 App 的 Crash 文件，但有时还是难免要对单独某个 Crash 文件做分析，本文就是来介绍一下这个流程。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#section">测试环境</a></li>
+  <li><a href="#crash-">符号化 Crash 文件</a>    <ul>
+      <li><a href="#section-1">方法一</a></li>
+      <li><a href="#section-2">方法二</a></li>
+      <li><a href="#section-3">方法三</a></li>
+    </ul>
+  </li>
+  <li><a href="#app--dsym--uuid">关于 App 和 .dSYM 文件的 uuid</a></li>
+</ul>
+
+<h2 id="section">测试环境</h2>
+
+<p>前提：App 提交 AppStore 时不是在你的机子上操作的 archive。</p>
+
+<p>环境：Xcode 6</p>
+
+<p><strong>注意</strong>，下述方法的时效性比较强，因为苹果也一直在调整优化他们的解决方案。但总体来说应该是向上兼容的，流程只会越来越简单方便。</p>
+
+<h2 id="crash-">符号化 Crash 文件</h2>
+
+<h3 id="section-1">方法一</h3>
+
+<ol>
+  <li>从 Xcode 的 Window -&gt; Organizer -&gt; Archives 中通过右键 “Show in Finder” 拿到提交 AppStore 的 archive 文件 <code>*.xcarchive</code>；</li>
+  <li>右键 <code>*.xcarchive</code> “显示包内容”，拿到 yourAppName.app.dSYM 文件和 yourAppName.app 文件(该文件在你那里可能没有后缀)；</li>
+  <li>将上述的 yourAppName.app.dSYM 和 yourAppName.app 文件和你拿到的 <code>.crash</code> 文件放到同一个目录下(这里也可以通过其他方式不用把他们放一起，后边会讲到)；</li>
+  <li>打开 Xcode 的 Window -&gt; Devices，选中你的设备，点击 “View Device Logs”；</li>
+  <li>将 <code>.crash</code> 文件拖入上述打开面板的左侧，停几秒就会看到你的 crash 文件出现其中，选中，再隔几秒就会看到被符号化的 crash 文件了，OK。</li>
+</ol>
+
+<h3 id="section-2">方法二</h3>
+
+<p>将上述 1 拿到的 <code>*.xcarchive</code> 文件拖入你的机子的相应位置，此时直接将 <code>.crash</code> 文件拖入上述 4 打开的面板应该就可以了。</p>
+
+<h3 id="section-3">方法三</h3>
+
+<p>在上述 3 时，也可以不把 <code>.crash</code> 文件和那俩放到一起，比如那俩文件放在了 MyAppDSYM 目录下，则在命令行执行如下命令：
+mdimport MyAppDSYM/
+这之后直接执行上述 5 即可。</p>
+
+<h2 id="app--dsym--uuid">关于 App 和 .dSYM 文件的 uuid</h2>
+
+<p>通过如下命令可查看 App 的 uuid，<code>.crash</code> 文件中所显示的 App 的 uuid 应该和 <code>.app</code> 和 <code>.dSYM</code> 文件的 uuid 都是一致的。例如：</p>
+
+<p>首先说下什么是 UUID。每一个可执行程序都有一个 build UUID 来唯一标识。Crash 日志包含发生 crash 的这个 App 的 build UUID 以及 crash 发生的时候，应用加载的所有库文件的 build UUID。</p>
+
+<ol>
+  <li>
+    <p>拿到 yourAppName.app 的 uuid ：</p>
+
+    <p>命令：</p>
+
+    <pre><code> dwarfdump --uuid yourAppName.app/yourAppName
+</code></pre>
+
+    <p>举例：</p>
+
+    <pre><code> dwarfdump --uuid MyAppName.app/MyAppName
+</code></pre>
+
+    <p>结果示例：</p>
+
+    <pre><code> UUID: 78A868EF-49B3-3AAB-AB03-807DA6EF8567 (armv7) MyAppName.app/MyAppName
+ UUID: 96A04089-39CF-3BE2-84DD-F1FDA146EA39 (arm64) MyAppName.app/MyAppName
+</code></pre>
+  </li>
+  <li>
+    <p>拿到 yourAppName.app.dSYM 的 uuid ：</p>
+
+    <p>命令：</p>
+
+    <pre><code> dwarfdump --uuid yourAppName.app.dSYM
+</code></pre>
+
+    <p>举例：</p>
+
+    <pre><code> dwarfdump --uuid MyAppName.app.dSYM
+</code></pre>
+
+    <p>结果示例：</p>
+
+    <pre><code> UUID: 78A868EF-49B3-3AAB-AB03-807DA6EF8567 (armv7) MyAppName.app.dSYM/Contents/Resources/DWARF/MyAppName
+ UUID: 96A04089-39CF-3BE2-84DD-F1FDA146EA39 (arm64) MyAppName.app.dSYM/Contents/Resources/DWARF/MyAppName
+</code></pre>
+  </li>
+  <li>
+    <p>拿到 <code>*.crash</code> 文件的 uuid ：</p>
+
+    <p><strong>&lt; 方法一 &gt;</strong></p>
+
+    <p>命令：</p>
+
+    <pre><code> grep "yourAppName armv" crashFileName.crash
+</code></pre>
+
+    <p>示例：</p>
+
+    <pre><code> grep "MyAppName armv" 001.crash
+</code></pre>
+
+    <p>结果：</p>
+
+    <pre><code> 0x3d000 -   0x5c4fff +MyAppName armv7  &lt;78a868ef49b33aabab03807da6ef8567&gt; /private/var/mobile/Containers/Bundle/Application/81C16F53-6CB6-4CEC-80E3-7D65B61FF91B/MyAppName.app/MyAppName
+</code></pre>
+
+    <p><strong>&lt; 方法二 &gt;</strong></p>
+
+    <p>命令：</p>
+
+    <pre><code> grep --after-context=2 "Binary Images:" crashFileName.crash
+</code></pre>
+
+    <p>示例：</p>
+
+    <pre><code> grep --after-context=2 "Binary Images:" 001.crash
+</code></pre>
+
+    <p>结果：</p>
+
+    <pre><code> Binary Images:
+    0x3d000 -   0x5c4fff +MyAppName armv7  &lt;78a868ef49b33aabab03807da6ef8567&gt; /private/var/mobile/Containers/Bundle/Application/81C16F53-6CB6-4CEC-80E3-7D65B61FF91B/MyAppName.app/MyAppName
+ 0x2745d000 - 0x27549fff  RawCamera armv7  &lt;31a1ae8be0ea314e8b2892fc94a3e68a&gt; /System/Library/CoreServices/RawCamera.bundle/RawCamera
+</code></pre>
+  </li>
+</ol>
+
+<p>上述的 <code>&lt;&gt;</code> 内显示的就是相应的 uuid。</p>
+
+<p>另外，还有两种方法符号化 crash 文件，分别是命令行工具 symbolicatecrash 和命令行工具 atos。详细使用参考：<a href="http://wufawei.com/2014/03/symbolicating-ios-crash-logs/">分析iOS Crash文件：符号化iOS Crash文件的3种方法</a></p>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<!--
+<span class="byline author vcard">Posted by <span class="fn">matrixzk</span></span>
+<!-->
+
+<span class="byline author vcard"><span class="fn">matrixzk •
+      
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+Dec 20th, 2014 •
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/20141113/memory-management-3-autoreleasePool/" title="Previous Post: OC内存管理那些事儿(3)：使用自动释放池块">&larr; OC内存管理那些事儿(3)：使用自动释放池块</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/20150110/resolve-gesture-conflicts/" title="Next Post: 解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题">解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题 &rarr;</a>
+        <!-- &raquo; -->
+      
+    </p>
+  </footer>
+</article>
+<!--
+
+<!-->
+
+
+  <section>
+   <!-- 多说评论框 start -->
+<!--
+	<div class="ds-thread" data-thread-key="请将此处替换成文章在你的站点中的ID" data-title="请替换成文章的标题" data-url="请替换成文章的网址"></div>
+<!-->
+	<div class="ds-thread" data-thread-key="/blog/20141220/crash-file-analysis" data-title="简述 Crash 文件分析流程" data-url="http://matrixzk.github.io/blog/20141220/crash-file-analysis/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"matrixzk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+  </section>
+ 
+  
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最新文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/20150122/load-image-encoded-with-base64/">在 iOS 中展示 Base64 编码的图片</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20150110/resolve-gesture-conflicts/">解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141220/crash-file-analysis/">简述 Crash 文件分析流程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141113/memory-management-3-autoreleasePool/">OC内存管理那些事儿(3)：使用自动释放池块</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141111/memory-management-2-practical/">OC内存管理那些事儿(2)：内存管理实践</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+  <br/>
+  <h1>分类目录</h1>
+  <ul id="categories">
+    <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
+<li class='category'><a href='/blog/categories/ios/'>ios (2)</a></li>
+<li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
+<li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
+<li class='category'><a href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理 (4)</a></li>
+
+  </ul>
+</section>
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - matrixzk -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+  <!--返回顶部开始-->
+<div id="full" style="width:0px; height:0px; position:fixed; right:60px; bottom:60px; z-index:100; text-align:right; background-color:transparent; cursor:pointer;">
+        <a href="#" onclick="goTop();return false;"><img src="/images/top.png" border=0 alt="返回顶部"></a>
+</div>
+<script src="/javascripts/goTop.js" type="text/javascript"></script>
+<!--返回顶部结束-->
+</body>
+</html>
+
