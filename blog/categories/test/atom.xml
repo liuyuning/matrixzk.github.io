@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[分类：test | Matrixzk's Blog]]></title>
+  <link href="http://matrixzk.github.io/blog/categories/test/atom.xml" rel="self"/>
+  <link href="http://matrixzk.github.io/"/>
+  <updated>2015-06-18T14:22:15+08:00</updated>
+  <id>http://matrixzk.github.io/</id>
+  <author>
+    <name><![CDATA[matrixzk]]></name>
+    <email><![CDATA[matrixzk.me@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Test Page]]></title>
+    <link href="http://matrixzk.github.io/blog/20150507/test-page/"/>
+    <updated>2015-05-07T15:16:14+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20150507/test-page</id>
+    <content type="html"><![CDATA[<!-- more -->
+
+<script type="text/javascript">
+
+(function() {
+	alert(window.mmbrowser.getPlatformCode());
+	alert(window.mmbrowser.getVersionCode());
+})()
+
+</script>
+
+<h3 id="mxshare7b22sns2212022msg2222e58886e4baabe588b0e5beaee58d9a2020e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4227d"><a href="mx://share/#%7B%22sns%22:1,%20%22msg%22:%22%E5%88%86%E4%BA%AB%E5%88%B0%E5%BE%AE%E5%8D%9A%20...%20%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%22%7D">新浪微博分享</a></h3>
+
+<h3 id="mxshare7b22sns222223222022msg2222e58886e4baabe588b0e5beaee4bfa1e69c8be58f8be59c882020e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4e5b08fe4bc99e4bcb4227d"><a href="mx://share/#%7B%22sns%22:%2223%22,%20%22msg%22:%22%E5%88%86%E4%BA%AB%E5%88%B0%E5%BE%AE%E4%BF%A1%E6%9C%8B%E5%8F%8B%E5%9C%88%20...%20%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%E5%B0%8F%E4%BC%99%E4%BC%B4%22%7D">微信朋友圈分享</a></h3>
+
+<h3 id="mxlogin"><a href="mx://login">登录</a></h3>
+
+<h3 id="mxregister"><a href="mx://register">注册</a></h3>
+
+]]></content>
+  </entry>
+  
+</feed>
