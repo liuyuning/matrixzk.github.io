@@ -252,6 +252,13 @@ May 18th, 2015
   <li>GCD 的 API。例如，<code>dispatch_async</code> 函数。</li>
 </ul>
 
+<p>在 ARC 下，除了上述两种情况外，在如下两种情况，编译器也帮我们自动做了 <code>copy</code> 操作：</p>
+
+<ul>
+  <li>Block 作为函数或方法的返回值返回时。(此场景和 ARC 下普通的对象作为函数或方法返回值返回时的场景一致)</li>
+  <li>将 Block 赋值给附有 <code>__strong</code> 修饰符的变量时。(ARC 下的局部变量和成员变量默认都是 <code>__strong</code> 的，只是作用域不同)</li>
+</ul>
+
 <p>这里还有一个有趣的小测试<a href="http://blog.parse.com/learn/engineering/objective-c-blocks-quiz/">Objective-C Blocks Quiz</a>，可以测下自己对 Block 的理解。</p>
 
 </div>
@@ -278,6 +285,12 @@ May 18th, 2015
 <!-->
 May 18th, 2015 •
       
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/objecive-c/'>objecive-c</a>
+  
+</span>
 
 
     </p>
@@ -362,6 +375,7 @@ var duoshuoQuery = {short_name:"matrixzk"};
     <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
 <li class='category'><a href='/blog/categories/ios/'>ios (2)</a></li>
 <li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
+<li class='category'><a href='/blog/categories/objecive-c/'>objecive-c (1)</a></li>
 <li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
 <li class='category'><a href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理 (4)</a></li>
 
