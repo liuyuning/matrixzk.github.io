@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[分类：objecive-c | Matrixzk's Blog]]></title>
-  <link href="http://matrixzk.github.io/blog/categories/objecive-c/atom.xml" rel="self"/>
+  <title><![CDATA[分类：objective-c | Matrixzk's Blog]]></title>
+  <link href="http://matrixzk.github.io/blog/categories/objective-c/atom.xml" rel="self"/>
   <link href="http://matrixzk.github.io/"/>
-  <updated>2015-06-26T21:55:48+08:00</updated>
+  <updated>2015-06-26T21:57:33+08:00</updated>
   <id>http://matrixzk.github.io/</id>
   <author>
     <name><![CDATA[matrixzk]]></name>
