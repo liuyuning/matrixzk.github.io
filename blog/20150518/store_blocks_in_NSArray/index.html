@@ -1,0 +1,406 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>ARC 下向 NSArray 添加 Block 元素的一个小坑 - Matrixzk&#8217;s Blog</title>
+  <meta name="author" content="matrixzk">
+
+  
+  <meta name="description" content="一直以来我都认为在 ARC 下，给 Cocoa 框架的集合类的 API ，如 NSArray，添加 Block 类型的元素时，Block 是会被编译器自动执行 copy 操作的。而且一直以来的实践也验证了这一事实。但今天在测试如下一段代码时出现了问题。 问题描述 测试验证 探寻原因 扩展 问题描述 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://matrixzk.github.io/blog/20150518/store_blocks_in_NSArray">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Matrixzk's Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <!--
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <!-->
+  <script src="//ajax.useso.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<!--
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<!-->
+
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-56261327-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Matrixzk&#8217;s Blog</a></h1>
+  
+    <h2>keep moving</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="订阅RSS">RSS</a></li>
+  
+</ul>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><font color=#f2f2f2>|</font></li>
+  <li><a href="/about/about.html">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">ARC 下向 NSArray 添加 Block 元素的一个小坑</h1>
+    
+    
+      <p class="meta">
+        
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+May 18th, 2015
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>一直以来我都认为在 ARC 下，给 Cocoa 框架的集合类的 API ，如 NSArray，添加 Block 类型的元素时，Block 是会被编译器自动执行 <code>copy</code> 操作的。而且一直以来的实践也验证了这一事实。但今天在测试如下一段代码时出现了问题。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#section">问题描述</a></li>
+  <li><a href="#section-1">测试验证</a></li>
+  <li><a href="#section-2">探寻原因</a></li>
+  <li><a href="#section-3">扩展</a></li>
+</ul>
+
+<h2 id="section">问题描述</h2>
+
+<p>先看下出问题的测试代码：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="kt">id</span> <span class="nf">getBlockArray</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">    <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="mi">12</span><span class="p">;</span>
+</span><span class="line">    <span class="bp">NSArray</span> <span class="o">*</span><span class="n">arr</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSArray</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithObjects</span><span class="p">:</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block1 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);},</span>
+</span><span class="line">                                                    <span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block2 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);},</span>
+</span><span class="line">                                                    <span class="nb">nil</span><span class="p">];</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">arr</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="k">typedef</span> <span class="nf">void</span> <span class="p">(</span><span class="o">^</span><span class="n">MyBlock</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+</span><span class="line">
+</span><span class="line">    <span class="kt">id</span> <span class="n">blkArray</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span> <span class="n">getBlockArray</span><span class="p">];</span>
+</span><span class="line">    <span class="n">MyBlock</span> <span class="n">block1</span> <span class="o">=</span> <span class="n">blkArray</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line">    <span class="n">MyBlock</span> <span class="n">block2</span> <span class="o">=</span> <span class="n">blkArray</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="c1">// EXC_BAD_ACCESS, crash !!!</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">blcok1</span><span class="p">();</span>
+</span><span class="line">    <span class="n">blcok2</span><span class="p">();</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>如上所示，在获取数组中第二个 Block 元素时，crash 了，原因是 <code>EXC_BAD_ACCESS</code>，即访问了已被释放的无效内存。很奇怪，调试打印 <code>arr</code>，输出如下：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="o">&lt;</span><span class="n">__NSArrayM</span> <span class="mh">0x100300500</span><span class="o">&gt;</span><span class="p">(</span>
+</span><span class="line">    <span class="o">&lt;</span><span class="nl">__NSMallocBlock__</span><span class="p">:</span> <span class="mh">0x100300410</span><span class="o">&gt;</span><span class="p">,</span>
+</span><span class="line">    <span class="o">&lt;</span><span class="nl">__NSStackBlock__</span><span class="p">:</span> <span class="mh">0x7fff5fbff750</span><span class="o">&gt;</span>
+</span><span class="line"><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>居然一个在堆上，一个在栈上，这。。。有些挑战三观了。</p>
+
+<h2 id="section-1">测试验证</h2>
+
+<p>确实很奇怪，那不妨来试试给数组填充元素的其他方式吧：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">getBlockArray</span> <span class="p">{</span>
+</span><span class="line">    <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line">    <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">arr</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSMutableArray</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">arr</span> <span class="nl">addObject</span><span class="p">:</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block1 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);}];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">arr</span> <span class="nl">addObject</span><span class="p">:</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block2 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);}];</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="n">arr</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>以及：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span><span class="line"><span class="bp">NSArray</span> <span class="o">*</span><span class="n">arr</span> <span class="o">=</span> <span class="l">@[</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block1 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);},</span> <span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block2 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);}];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这两种情况下调试打印 <code>arr</code>，输出如下：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="o">&lt;</span><span class="n">__NSArrayM</span> <span class="mh">0x100100250</span><span class="o">&gt;</span><span class="p">(</span>
+</span><span class="line">    <span class="o">&lt;</span><span class="nl">__NSMallocBlock__</span><span class="p">:</span> <span class="mh">0x100200550</span><span class="o">&gt;</span><span class="p">,</span>
+</span><span class="line">    <span class="o">&lt;</span><span class="nl">__NSMallocBlock__</span><span class="p">:</span> <span class="mh">0x1003007e0</span><span class="o">&gt;</span>
+</span><span class="line"><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>可以看到都没问题，作为 <code>addObject:</code> 参数添加进来的两个 Block 元素，都被编译器自动执行了 <code>copy</code> 操作，这样 Block 的类型就变成了 <code>__NSMallocBlock</code>，被拷贝到了堆上。好险，三观稍微又正了点儿。但文章开头的问题究竟是什么原因呢？</p>
+
+<h2 id="section-2">探寻原因</h2>
+
+<p>比较上边的测试代码和出问题的代码，同样都是 ARC 的测试环境，为什么问题代码中数组的两个 Block 元素，第一个在堆上，第二个在栈上呢？联想到像测试代码中这样，将 Block 拷贝到堆上的操作是编译器在编译时完成的，那问题会不会出在初始化方法上呢？然后点开出问题的那个 API：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">initWithObjects:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">firstObj</span><span class="p">,</span> <span class="p">...</span> <span class="n">NS_REQUIRES_NIL_TERMINATION</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>果然！这里的参数是可变个数的，而且只有第一个参数显式的声明为 <code>id</code> 类型。这下就能解释问题代码中，为什么第一个 Block 元素在堆上而第二个却在栈上：因为只有第一个参数显式的声明为 <code>id</code> 类型，所以编译器在编译阶段只能意识到需要对第一个作为参数传进来的 Block 进行 <code>copy</code> 处理。为了验证这一猜测，下面显式得把后边的 Block 传参强制转换为 <code>id</code> 类型，让编译器<code>看到</code>它：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="bp">NSArray</span> <span class="o">*</span><span class="n">arr</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSArray</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithObjects</span><span class="p">:</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block1 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);},</span>
+</span><span class="line">                                                <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block2 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);},</span>
+</span><span class="line">                                                <span class="nb">nil</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>代码顺利运行通过，没有 crash，猜测得到了验证。这真算是一个坑点儿。在 stackoverflow 上看到了一个对类似问题的讨论，可以参考下：<a href="http://stackoverflow.com/questions/7997666/storing-blocks-in-an-array">Storing Blocks in an Array</a>。</p>
+
+<h2 id="section-3">扩展</h2>
+
+<p>另外需要注意的一点是，在 MRC 下，向方法或函数的参数中传递 Block 时，除了以下两种情况，都需要手动 <code>copy</code> 一下：</p>
+
+<ul>
+  <li>Cocoa 框架中的方法名含有 usingBlock 的方法。例如 NSArray 的 <code>enumerateObjectsUsingBlock</code> 实例方法。</li>
+  <li>GCD 的 API。例如，<code>dispatch_async</code> 函数。</li>
+</ul>
+
+<p>这里还有一个有趣的小测试<a href="http://blog.parse.com/learn/engineering/objective-c-blocks-quiz/">Objective-C Blocks Quiz</a>，可以测下自己对 Block 的理解。</p>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<!--
+<span class="byline author vcard">Posted by <span class="fn">matrixzk</span></span>
+<!-->
+
+<span class="byline author vcard"><span class="fn">matrixzk •
+      
+<!-- post.date_time_html -->
+
+
+
+<!--
+
+
+<!-->
+May 18th, 2015 •
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/20150122/load-image-encoded-with-base64/" title="Previous Post: 在 iOS 中展示 base64 编码的图片">&larr; 在 iOS 中展示 base64 编码的图片</a>
+      
+      
+    </p>
+  </footer>
+</article>
+<!--
+
+<!-->
+
+
+  <section>
+   <!-- 多说评论框 start -->
+<!--
+	<div class="ds-thread" data-thread-key="请将此处替换成文章在你的站点中的ID" data-title="请替换成文章的标题" data-url="请替换成文章的网址"></div>
+<!-->
+	<div class="ds-thread" data-thread-key="/blog/20150518/store_blocks_in_NSArray" data-title="ARC 下向 NSArray 添加 Block 元素的一个小坑" data-url="http://matrixzk.github.io/blog/20150518/store_blocks_in_NSArray/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"matrixzk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+  </section>
+ 
+  
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最新文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/20150518/store_blocks_in_NSArray/">ARC 下向 NSArray 添加 Block 元素的一个小坑</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20150122/load-image-encoded-with-base64/">在 iOS 中展示 Base64 编码的图片</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20150110/resolve-gesture-conflicts/">解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141220/crash-file-analysis/">简述 Crash 文件分析流程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/20141113/memory-management-3-autoreleasePool/">OC内存管理那些事儿(3)：使用自动释放池块</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+  <br/>
+  <h1>分类目录</h1>
+  <ul id="categories">
+    <li class='category'><a href='/blog/categories/git/'>git (1)</a></li>
+<li class='category'><a href='/blog/categories/ios/'>ios (2)</a></li>
+<li class='category'><a href='/blog/categories/ios8-day-by-day/'>ios8 day-by-day (1)</a></li>
+<li class='category'><a href='/blog/categories/octopress/'>octopress (2)</a></li>
+<li class='category'><a href='/blog/categories/ocnei-cun-guan-li/'>oc内存管理 (4)</a></li>
+
+  </ul>
+</section>
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - matrixzk -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+  <!--返回顶部开始-->
+<div id="full" style="width:0px; height:0px; position:fixed; right:60px; bottom:60px; z-index:100; text-align:right; background-color:transparent; cursor:pointer;">
+        <a href="#" onclick="goTop();return false;"><img src="/images/top.png" border=0 alt="返回顶部"></a>
+</div>
+<script src="/javascripts/goTop.js" type="text/javascript"></script>
+<!--返回顶部结束-->
+</body>
+</html>
+
