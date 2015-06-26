@@ -4,7 +4,7 @@
   <title><![CDATA[分类：objecive-c | Matrixzk's Blog]]></title>
   <link href="http://matrixzk.github.io/blog/categories/objecive-c/atom.xml" rel="self"/>
   <link href="http://matrixzk.github.io/"/>
-  <updated>2015-06-26T21:43:24+08:00</updated>
+  <updated>2015-06-26T21:53:43+08:00</updated>
   <id>http://matrixzk.github.io/</id>
   <author>
     <name><![CDATA[matrixzk]]></name>
@@ -134,7 +134,7 @@ NSArray *arr = [[NSArray alloc] initWithObjects:^{NSLog(@"block1 val = %d", val)
   <li>将 Block 赋值给附有 <code>__strong</code> 修饰符的变量时。(ARC 下的局部变量和成员变量默认都是 <code>__strong</code> 的，只是作用域不同)</li>
 </ul>
 
-<p>这里还有一个有趣的小测试<a href="http://blog.parse.com/learn/engineering/objective-c-blocks-quiz/">Objective-C Blocks Quiz</a>，可以测下自己对 Block 的理解。</p>
+<p>这里有一个有趣的小测试<a href="http://blog.parse.com/learn/engineering/objective-c-blocks-quiz/">Objective-C Blocks Quiz</a>，可以测下自己对 Block 的理解。</p>
 
 ]]></content>
   </entry>

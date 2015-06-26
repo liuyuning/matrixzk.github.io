@@ -4,7 +4,7 @@
   <title><![CDATA[分类：git | Matrixzk's Blog]]></title>
   <link href="http://matrixzk.github.io/blog/categories/git/atom.xml" rel="self"/>
   <link href="http://matrixzk.github.io/"/>
-  <updated>2015-06-26T21:43:24+08:00</updated>
+  <updated>2015-06-26T21:53:43+08:00</updated>
   <id>http://matrixzk.github.io/</id>
   <author>
     <name><![CDATA[matrixzk]]></name>
@@ -54,7 +54,7 @@
 <img src="http://matrixzk.github.io/images/blog/20141104_git-model@2x.png" alt="git-flow" height='70%' width='70%' style="text-align:center"/>
 <!-->
 
-<p><img class="center" src="/images/blog/20141104_git-model@2x.png" width="450" height="450" title="git-model" ></p>
+<p>{% img center /images/blog/20141104_git-model@2x.png 450 450 git-model %}</p>
 
 <p>这里以<a href="http://git-scm.com/">Git</a>作为源代码的版本控制工具。</p>
 
@@ -77,7 +77,7 @@
 <img src="http://matrixzk.github.io/images/blog/20141104_centr-decentr@2x.png" alt="git-flow" height='70%' width='70%' style="text-align:center"/>
 <!-->
 
-<p><img class="center" src="/images/blog/20141104_centr-decentr@2x.png" width="500" height="500" title="centr-decentr" ></p>
+<p>{% img center /images/blog/20141104_centr-decentr@2x.png 500 500 centr-decentr %}</p>
 
 <p>每个开发者都对<code>origin</code>执行<code>pull</code>(拉取代码)和<code>push</code>(推送代码)操作。但是在这种中央式的<code>push-pull</code>关系背后，每个开发者可能还会从其他同事那里<code>pull</code>一些修改(changes)而组成子团队。比如说，当有两个及以上开发者要合作完成一个较大的新功能，并且尚未将该新功能全部完成并推往<code>origin</code>仓库时，适用于这一场景。在上图中，就有Alice和Bob，Alice和David，以及Clair和David这样三个子团队。</p>
 
@@ -104,7 +104,7 @@
 
 <h2 id="supporting-branches">辅助分支 (Supporting branches)</h2>
 
-<p><img class="right" src="/images/blog/20141104_main-branches@2x.png" width="260" title="main-branches" ></p>
+<p>{% img right /images/blog/20141104_main-branches@2x.png 260 main-branches %}</p>
 
 <p>伴随着主要分支<code>master</code>和<code>develop</code>，我们的开发模式还用了一些辅助分支来协助团队成员间的平行开发，使对功能的追踪变得轻便(<code>ease tracking of features</code>)，并且协助产品的发布，以及进行线上版本bug的快速修复。</p>
 
@@ -122,7 +122,7 @@
 
 <h3 id="feature-branches">功能分支 (Feature branches)</h3>
 
-<p><img class="right" src="/images/blog/20141104_fb@2x.png" width="150" title="feature-branch" ></p>
+<p>{% img right /images/blog/20141104_fb@2x.png 150 feature-branch %}</p>
 
 <p>分支创建自：<code>develop</code>；必须合并回：<code>develop</code>；</p>
 
@@ -159,7 +159,7 @@ $ git push origin develop
 
 <p>上边的<code>--no-ff</code>标记的作用是使当前的合并操作总是创建一个新的<code>commit</code>对象，即使该合并被执行为快进式(<code>fast-forward</code>)合并。这样可以避免丢失掉该功能分支的历史存在信息，并且将针对该功能的所有提交都集中到一起。来对比一下：</p>
 
-<p><img class="center" src="/images/blog/20141104_merge-without-ff@2x.png" width="400" title="merge-without-ff" ></p>
+<p>{% img center /images/blog/20141104_merge-without-ff@2x.png 400 merge-without-ff %}</p>
 
 <p>对于后者的情形，想要从Git的历史信息中识别出哪些<code>commit</code>对象是针对该新功能所做的，简直不可能，除非去阅读所有的<code>log</code>信息。而且如果你想要回退到做整个新功能(比如一组提交)之前的状态，对于后者来说简直是件非常让人头疼的事，但是如果使用了<code>--no-ff</code>标记这将很容易实现。</p>
 
@@ -234,7 +234,7 @@ Deleted branch release-1.2 (was ff452fe).
 
 <h3 id="hotfix-branches">热修复分支 (Hotfix branches)</h3>
 
-<p><img class="right" src="/images/blog/20141104_hotfix-branches@2x.png" width="250" title="hotfix-branches" ></p>
+<p>{% img right /images/blog/20141104_hotfix-branches@2x.png 250 hotfix-branches %}</p>
 
 <p>分支创建自：<code>master</code>；必须合并回：<code>develop</code>和<code>master</code>；分支命名约定：<code>hotfix-*</code>。</p>
 

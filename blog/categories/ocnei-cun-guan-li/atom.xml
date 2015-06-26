@@ -4,7 +4,7 @@
   <title><![CDATA[分类：oc内存管理 | Matrixzk's Blog]]></title>
   <link href="http://matrixzk.github.io/blog/categories/ocnei-cun-guan-li/atom.xml" rel="self"/>
   <link href="http://matrixzk.github.io/"/>
-  <updated>2015-06-26T21:43:24+08:00</updated>
+  <updated>2015-06-26T21:53:43+08:00</updated>
   <id>http://matrixzk.github.io/</id>
   <author>
     <name><![CDATA[matrixzk]]></name>
@@ -258,7 +258,7 @@ return [match autorelease];   /* Let match go and return it. */ } ```
 
 <p><code>retain</code>一个对象就相当于创建了一个指向它的<strong>强引用</strong>(<code>strong reference</code>)。一个对象只有当它的所有强引用都被 release 后才会被释放掉(<code>deallocated</code>)。因此，这就有可能导致两个对象循环引用的问题，我们把这称为 <strong>retain cycle</strong>，即两个对象对彼此都有一个强引用(可能是两者间直接的强引用，也可能是通过一些其他的对象形成了一个首尾相接的强引用环)。</p>
 
-<p><img class="right" src="/images/blog/20141111_retaincycles_2x.png" width="200" title="retaincycles" ></p>
+<p>{% img right /images/blog/20141111_retaincycles_2x.png 200 retaincycles %}</p>
 
 <p>右图所示的对象关系就有可能导致循环引用。这里的<code>Document</code>对象含有一个<code>Page</code>对象来表示文档的每一页。每个<code>Page</code>对象都保留一个对其所在的文档的引用。如果<code>Document</code>对象有一个指向<code>Page</code>对象的强引用，同时<code>Page</code>对象也有一个指向<code>Document</code>对象的强引用，这样它们两个就永远都不会被释放掉了。直到<code>Page</code>对象被释放后，<code>Document</code>对象的引用计数才会变为0，而<code>Page</code>对象也同样要等<code>Document</code>对象释放后才会被释放。</p>
 
@@ -576,7 +576,7 @@ MyClass *myInstance = [MyClass createInstance];
 
 <p>虽然内存管理通常只针对单个对象，但是应该把管理<code>object graphs</code>作为目标。要确保已不再需要的对象所占的内存都被全部释放。</p>
 
-<p><img class="center" src="/images/blog/20141107_memory_management_2x.png" width="600" title="memory_management" ></p>
+<p>{% img center /images/blog/20141107_memory_management_2x.png 600 memory_management %}</p>
 
 <p>Objective-C 提供了两种管理内存的方式：</p>
 
