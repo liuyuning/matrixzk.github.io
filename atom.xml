@@ -1,0 +1,2414 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Matrixzk's Blog]]></title>
+  <link href="http://matrixzk.github.io/atom.xml" rel="self"/>
+  <link href="http://matrixzk.github.io/"/>
+  <updated>2015-09-03T21:02:36+08:00</updated>
+  <id>http://matrixzk.github.io/</id>
+  <author>
+    <name><![CDATA[matrixzk]]></name>
+    <email><![CDATA[matrixzk.me@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[ARC 下向 NSArray 添加 Block 元素的一个小坑]]></title>
+    <link href="http://matrixzk.github.io/blog/20150518/store_blocks_in_NSArray/"/>
+    <updated>2015-05-18T15:51:44+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20150518/store_blocks_in_NSArray</id>
+    <content type="html"><![CDATA[<p>一直以来我都认为在 ARC 下，给 Cocoa 框架的集合类，如 NSArray，添加 Block 类型的元素时，Block 是会被编译器自动执行 <code>copy</code> 操作的。而且一直以来的实践也验证了这一事实。但今天在测试如下一段代码时出现了问题。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#section">问题描述</a></li>
+  <li><a href="#section-1">测试验证</a></li>
+  <li><a href="#section-2">探寻原因</a></li>
+  <li><a href="#section-3">扩展</a></li>
+</ul>
+
+<h2 id="section">问题描述</h2>
+
+<p>先看下出问题的测试代码：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="kt">id</span> <span class="nf">getBlockArray</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">    <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="mi">12</span><span class="p">;</span>
+</span><span class="line">    <span class="bp">NSArray</span> <span class="o">*</span><span class="n">arr</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSArray</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithObjects</span><span class="p">:</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block1 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);},</span>
+</span><span class="line">                                                    <span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block2 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);},</span>
+</span><span class="line">                                                    <span class="nb">nil</span><span class="p">];</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">arr</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="k">typedef</span> <span class="nf">void</span> <span class="p">(</span><span class="o">^</span><span class="n">MyBlock</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+</span><span class="line">
+</span><span class="line">    <span class="kt">id</span> <span class="n">blkArray</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span> <span class="n">getBlockArray</span><span class="p">];</span>
+</span><span class="line">    <span class="n">MyBlock</span> <span class="n">block1</span> <span class="o">=</span> <span class="n">blkArray</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line">    <span class="n">MyBlock</span> <span class="n">block2</span> <span class="o">=</span> <span class="n">blkArray</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="c1">// EXC_BAD_ACCESS, crash !!!</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">blcok1</span><span class="p">();</span>
+</span><span class="line">    <span class="n">blcok2</span><span class="p">();</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>如上所示，在获取数组中第二个 Block 元素时，crash 了，原因是 <code>EXC_BAD_ACCESS</code>，即访问了已被释放的无效内存。很奇怪，调试打印 <code>arr</code>，输出如下：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="o">&lt;</span><span class="n">__NSArrayM</span> <span class="mh">0x100300500</span><span class="o">&gt;</span><span class="p">(</span>
+</span><span class="line">    <span class="o">&lt;</span><span class="nl">__NSMallocBlock__</span><span class="p">:</span> <span class="mh">0x100300410</span><span class="o">&gt;</span><span class="p">,</span>
+</span><span class="line">    <span class="o">&lt;</span><span class="nl">__NSStackBlock__</span><span class="p">:</span> <span class="mh">0x7fff5fbff750</span><span class="o">&gt;</span>
+</span><span class="line"><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>居然一个在堆上，一个在栈上，这。。。有些挑战三观了。</p>
+
+<h2 id="section-1">测试验证</h2>
+
+<p>确实很奇怪，那不妨来试试给数组填充元素的其他方式吧：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">getBlockArray</span> <span class="p">{</span>
+</span><span class="line">    <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line">    <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">arr</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSMutableArray</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">arr</span> <span class="nl">addObject</span><span class="p">:</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block1 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);}];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">arr</span> <span class="nl">addObject</span><span class="p">:</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block2 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);}];</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="n">arr</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>以及：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span><span class="line"><span class="bp">NSArray</span> <span class="o">*</span><span class="n">arr</span> <span class="o">=</span> <span class="l">@[</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block1 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);},</span> <span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block2 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);}];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这两种情况下调试打印 <code>arr</code>，输出如下：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="o">&lt;</span><span class="n">__NSArrayM</span> <span class="mh">0x100100250</span><span class="o">&gt;</span><span class="p">(</span>
+</span><span class="line">    <span class="o">&lt;</span><span class="nl">__NSMallocBlock__</span><span class="p">:</span> <span class="mh">0x100200550</span><span class="o">&gt;</span><span class="p">,</span>
+</span><span class="line">    <span class="o">&lt;</span><span class="nl">__NSMallocBlock__</span><span class="p">:</span> <span class="mh">0x1003007e0</span><span class="o">&gt;</span>
+</span><span class="line"><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>可以看到都没问题，作为 <code>addObject:</code> 参数添加进来的两个 Block 元素，都被编译器自动执行了 <code>copy</code> 操作，这样 Block 的类型就变成了 <code>__NSMallocBlock</code>，被拷贝到了堆上。好险，三观稍微又正了点儿。但文章开头的问题究竟是什么原因呢？</p>
+
+<h2 id="section-2">探寻原因</h2>
+
+<p>比较上边的测试代码和出问题的代码，同样都是 ARC 的测试环境，为什么问题代码中数组的两个 Block 元素，第一个在堆上，第二个在栈上呢？联想到像测试代码中这样，将 Block 拷贝到堆上的操作是编译器在编译时完成的，那问题会不会出在初始化方法上呢？然后点开出问题的那个 API：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">initWithObjects:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">firstObj</span><span class="p">,</span> <span class="p">...</span> <span class="n">NS_REQUIRES_NIL_TERMINATION</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>果然！这里的参数是可变个数的，而且只有第一个参数显式的声明为 <code>id</code> 类型。这下就能解释问题代码中，为什么第一个 Block 元素在堆上而第二个却在栈上：因为只有第一个参数显式的声明为 <code>id</code> 类型，所以编译器在编译阶段只能意识到需要对第一个作为参数传进来的 Block 进行 <code>copy</code> 处理。为了验证这一猜测，下面显式得把后边的 Block 传参强制转换为 <code>id</code> 类型，让编译器<code>看到</code>它：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="bp">NSArray</span> <span class="o">*</span><span class="n">arr</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSArray</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithObjects</span><span class="p">:</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block1 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);},</span>
+</span><span class="line">                                                <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="o">^</span><span class="p">{</span><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block2 val = %d&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">);},</span>
+</span><span class="line">                                                <span class="nb">nil</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>代码顺利运行通过，没有 crash，猜测得到了验证。这真算是一个坑点儿。在 stackoverflow 上看到了一个对类似问题的讨论，可以参考下：<a href="http://stackoverflow.com/questions/7997666/storing-blocks-in-an-array">Storing Blocks in an Array</a>。</p>
+
+<h2 id="section-3">扩展</h2>
+
+<p>另外需要注意的一点是，在 MRC 下，向方法或函数的参数中传递 Block 时，除了以下两种情况，都需要手动 <code>copy</code> 一下：</p>
+
+<ul>
+  <li>Cocoa 框架中的方法名含有 usingBlock 的方法。例如 NSArray 的 <code>enumerateObjectsUsingBlock</code> 实例方法。</li>
+  <li>GCD 的 API。例如，<code>dispatch_async</code> 函数。</li>
+</ul>
+
+<p>在 ARC 下，除了上述两种情况外，在如下两种情况，编译器也帮我们自动做了 <code>copy</code> 操作：</p>
+
+<ul>
+  <li>Block 作为函数或方法的返回值返回时。(此场景和 ARC 下普通的对象作为函数或方法返回值返回时的场景一致)</li>
+  <li>将 Block 赋值给附有 <code>__strong</code> 修饰符的变量时。(ARC 下的局部变量和成员变量默认都是 <code>__strong</code> 的，只是作用域不同)</li>
+</ul>
+
+<p>这里有一个有趣的小测试<a href="http://blog.parse.com/learn/engineering/objective-c-blocks-quiz/">Objective-C Blocks Quiz</a>，可以测下自己对 Block 的理解。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[在 iOS 中展示 Base64 编码的图片]]></title>
+    <link href="http://matrixzk.github.io/blog/20150122/load-image-encoded-with-base64/"/>
+    <updated>2015-01-22T16:31:26+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20150122/load-image-encoded-with-base64</id>
+    <content type="html"><![CDATA[<p>做网页前端的同学有时为了减少 Http 的请求数量，经常会把一些需要重复使用并且比较小的图片根据 <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/data_URIs">Data URI</a> 协议，经 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码成字符串格式来储存。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#section">背景知识</a></li>
+  <li><a href="#section-1">解决方案一</a></li>
+  <li><a href="#section-2">解决方案二</a></li>
+  <li><a href="#section-3">参考链接</a></li>
+</ul>
+
+<h2 id="section">背景知识</h2>
+
+<p><code>Data URI</code> 的语法是这样的：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="html"><span class="line">data:[<span class="nt">&lt;mediatype&gt;</span>][;base64],<span class="nt">&lt;data&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这里的 mediatype 是一个 <code>MIME</code> 类型的字符串，比如 <code>image/png</code> 表示 png 格式的图片文件。缺省时其默认值为 <code>text/plain;charset=US-ASCII</code>。当要表示的 data 不是文本时，比如图片、音频、视频文件等，需要对其进行 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码。</p>
+
+<p>举个栗子，用 Data URI 表示一张图片时，大概是这个样子 (这里的 <code>...</code> 为省略的字符) ：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="html"><span class="line">data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAbgAAACOCAYAAABDnh23JlYWR5ccllPAAAAy ... RK5CYII=
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>根据 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码的原理，当看到一堆连续的字符后边跟一或两个 <code>=</code> 时，基本可以确定这是一个经过 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码后得到的字符串。</p>
+
+<p>在 html 中，像下边这样就可以将该图片显示出来了：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="html"><span class="line"><span class="nt">&lt;img</span> <span class="na">src=</span><span class="s">&quot;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAbgAAACOCAYAAABDnh23JlYWR5ccllPAAAAy ... RK5CYII=&quot;</span><span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="section-1">解决方案一</h2>
+
+<p>这里的 Data URI 也可视为是 URL，因此可将其转换为 <code>NSURL</code> ，然后将其转换为 <code>NSData</code> ，最后将其读出为 <code>UIImage</code> ：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="c1">// 这里的变量 dataURIStr 形如字符串 @&quot;data:image/png;base64,iVBORw0KGgoAy ... RK5CYII=&quot;</span>
+</span><span class="line">
+</span><span class="line"><span class="bp">NSURL</span>   <span class="o">*</span><span class="n">imgURL</span>  <span class="o">=</span> <span class="p">[</span><span class="bp">NSURL</span> <span class="nl">URLWithString</span><span class="p">:</span><span class="n">dataURIStr</span><span class="p">];</span>
+</span><span class="line"><span class="bp">NSData</span>  <span class="o">*</span><span class="n">imgData</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSData</span> <span class="nl">dataWithContentsOfURL</span><span class="p">:</span><span class="n">imgURL</span><span class="p">];</span>
+</span><span class="line"><span class="bp">UIImage</span> <span class="o">*</span><span class="n">img</span>     <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageWithData</span><span class="p">:</span><span class="n">imgData</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+<!--
+	上边的'```'后边居然不能跟空行，否则报错Error: Pygments can't parse unknown language: </p> 。。。。真是奇了怪了！！！
+<!-->
+
+<p><strong>此处注意：</strong>上述参数 <code>dataURIStr</code> 必须有协议前缀 <code>data:image/png;base64,</code>，否则就不是一个标准的 Data URI 了，得到的 <code>imgURL</code> 将会为 nil。</p>
+
+<h2 id="section-2">解决方案二</h2>
+
+<p>如果去掉上述协议前缀，剩下的字符串就是一个经 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码后的图片信息，此时可用 iOS7 之后 <code>NSData</code> 新增加的方法 <code>initWithBase64EncodedString: options:</code> 来搞定。它可将 <a href="http://zh.wikipedia.org/wiki/Base64">base64</a> 编码的字符串直接转换为 <code>NSData</code> ：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="c1">// 这里的变量 base64ImgStr 形如字符串 @&quot;iVBORw0KGgoAy ... RK5CYII=&quot;，即图片经 base64 编码后所得的字符串</span>
+</span><span class="line">
+</span><span class="line"><span class="bp">NSData</span>  <span class="o">*</span><span class="n">imgData</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSData</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithBase64EncodedString</span><span class="p">:</span><span class="n">base64ImgStr</span> <span class="nl">options</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line"><span class="bp">UIImage</span> <span class="o">*</span><span class="n">img</span>     <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageWithData</span><span class="p">:</span><span class="n">imgData</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="section-3">参考链接</h2>
+
+<ul>
+  <li><a href="http://stackoverflow.com/questions/1366837/how-to-display-a-base64-image-within-a-uiimageview">How to display a base64 image within a UIImageView?</a> <br /></li>
+  <li><a href="http://www.zhangxinxu.com/wordpress/2012/04/base64-url-image-%E5%9B%BE%E7%89%87-%E9%A1%B5%E9%9D%A2%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">小tip: base64: URL 背景图片与 web 页面性能优化</a></li>
+  <li><a href="http://www.webhek.com/data-url">Data URL 和图片</a></li>
+  <li><a href="http://blogger.gtwang.org/2013/09/minimizing-http-request-using-data-uri.html">使用 DATA URI 將圖片以 Base64 編碼並內崁至網頁中，加速載入速度</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[解决 UIPanGestureRecognizer 和 UIScreenEdgePanGestureRecognizer 手势的冲突问题]]></title>
+    <link href="http://matrixzk.github.io/blog/20150110/resolve-gesture-conflicts/"/>
+    <updated>2015-01-10T20:14:40+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20150110/resolve-gesture-conflicts</id>
+    <content type="html"><![CDATA[<p>有这样一个场景。现在想给一个 ViewController 容器增加一个手势，触发前进后退的导航功能。正常情况下，这里用 UIPanGestureRecognizer 就可以了。但是存在一个问题，如果当前界面有一个可以左右滑动的 ScrollView 时，比如是一个被双指放大了的 WebView，那么所加的这个 pan 手势就会被 ScrollView 的内部手势 (UIScrollViewPanGestureRecognizer 类型) 给屏蔽掉而不会被触发。于是这里又添加了两个 UIScreenEdgePanGestureRecognizer 边缘滑动手势，以在上述情况下通过触发边缘滑动手势进行前进后退导航。这时问题就来了，这几个手势势必会存在冲突问题 (其实真实项目中这里还有一个自定义的上下滑动手势，不过这里就先不提它了，主要说说上述两个手势的冲突问题)。下面就来解决这个问题。</p>
+
+<!-- more -->
+
+<p>首先，在 iOS 中，默认情况下在同一时刻只能有一个手势被识别，如果想改变这种默认行为，要用到 UIGestureRecognizerDelegate 协议的方法：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="c1">// called when the recognition of one of gestureRecognizer or otherGestureRecognizer would be blocked by the other</span>
+</span><span class="line"><span class="c1">// return YES to allow both to recognize simultaneously. the default implementation returns NO (by default no two gestures can be recognized simultaneously)</span>
+</span><span class="line"><span class="c1">//</span>
+</span><span class="line"><span class="c1">// note: returning YES is guaranteed to allow simultaneous recognition. returning NO is not guaranteed to prevent simultaneous recognition, as the other gesture&#39;s delegate may return YES</span>
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldRecognizeSimultaneouslyWithGestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">otherGestureRecognizer</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>当一个手势识别器对一个手势的解析将要阻塞另一个手势识别器识别其手势时，该方法将被调用。该方法默认是返回 NO。如果想让两个手势识别器同时对其各自手势进行解析，返回 YES 即可。注意，该方法返回 YES 能确保当前两个手势同时被识别，但是，返回 NO 并不能确保阻止当前两个手势被同时识别，因为另一个手势识别器的该代理方法可能会返回 YES。该方法的官方文档描述很模糊，我的理解是，在代理的所有手势在被识别之前调用该方法，两两比较确定哪些手势可以同时被触发。</p>
+
+<p>针对我们的问题，有 pan 手势和边缘滑动手势两类。这里该允许哪个手势可以和其它手势同时被识别呢？都可以吗？其实只能选边缘滑动手势。因为如果这里允许 pan 手势和其他手势同时被识别的话，它就和文章开头所描述的 ScrollView 的左右滑动手势冲突，也就是两个手势会被同时识别，当左右滑动时界面被滑动的同时也触发了前进后退导航操作，根本不能愉快的浏览当前界面内容。而边缘滑动手势只有在边缘滑动时才会被触发，就不存在了上述的手势冲突问题。代码如下：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldRecognizeSimultaneouslyWithGestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">otherGestureRecognizer</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="k">return</span> <span class="p">[</span><span class="n">gestureRecognizer</span> <span class="nl">isKindOfClass</span><span class="p">:[</span><span class="bp">UIScreenEdgePanGestureRecognizer</span> <span class="k">class</span><span class="p">]];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>接下来的问题是，允许边缘滑动手势可以和其他手势同时执行后，边缘滑动手势和左右滑动手势会同时执行，即在边缘滑动时，左右滑动手势的触发方法也会执行，由于这两个手势的触发方法基本相同，这相当于同一个触发方法被执行了两遍，肯定是不行的。</p>
+
+<p>UIGestureRecognizer 有这样一个方法 <code>requireGestureRecognizerToFail:</code> ，比如：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="p">[</span><span class="n">gestureRecognizerA</span> <span class="nl">requireGestureRecognizerToFail</span><span class="p">:</span><span class="n">gestureRecognizerB</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>它的作用是，gestureRecognizerA 的手势在进入 Began 状态之前，需要先把该方法参数所指定的 gestureRecognizerB 的手势给 Fail 掉。当 gestureRecognizerA 在等待 gestureRecognizerB 进入 Failed 状态时，gestureRecognizerA 保持在 Possible 状态。如果 gestureRecognizerB 被 Fail 掉了，gestureRecognizerA 就开始分析当前的 touch 事件，并过渡到下一个状态。另一方面，如果 gestureRecognizerB 过渡到了 Recognized 或 Began 状态，gestureRecognizerA 就进入到 Failed 状态。上述涉及到手势的几种状态转换，详细过程参考这里 <a href="https://developer.apple.com/library/ios/documentation/EventHandling/Conceptual/EventHandlingiPhoneOS/GestureRecognizer_basics/GestureRecognizer_basics.html#//apple_ref/doc/uid/TP40009541-CH2-SW22">Gesture Recognizers Operate in a Finite State Machine</a>。 </p>
+
+<font color="blue"><b>我的理解是，当前所有被注册代理的手势在进入 Possible 状态之后，全部被阻塞，然后两两判断之间的依赖关系，最终决定哪些手势可以被触发，或者同时被触发，进而进入 Began 状态(连续手势)或 Recognized 状态(离散手势)，开始执行触发方法。这只是我的个人理解，并未在官方文档上见到详细说明。</b></font>
+<p><br /></p>
+
+<p>回到我们的问题，根据上边的解释，让边缘滑动手势发送 <code>requireGestureRecognizerToFail:</code> 消息，左右滑动手势作为参数传进去，即在边缘滑动手势处于 Possible 状态 被触发之前，先把左右滑动手势 Fail 掉，然后边缘滑动手势进入 Began 状态，进而触发。</p>
+
+<p>到目前为止，文章开头所提的问题已经解决了。</p>
+
+<p>在实际的项目中因为还有动画等一些其他逻辑处理，所以还用到了 UIGestureRecognizerDelegate 的其他几个代理方法，这里大概提一下。</p>
+
+<ul>
+  <li>代理方法 <code>gestureRecognizer: shouldReceiveTouch:</code></li>
+</ul>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="c1">// called before touchesBegan:withEvent: is called on the gesture recognizer for a new touch. return NO to prevent the gesture recognizer from seeing this touch</span>
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldReceiveTouch:</span><span class="p">(</span><span class="bp">UITouch</span> <span class="o">*</span><span class="p">)</span><span class="nv">touch</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>该方法会在 <code>touchesBegan:withEvent:</code> 被调用之前被触发，如果返回 NO，这里的 gestureRecognizer 就看不到该 touch 事件了，也就是在这里的 gestureRecognizer 的“监控范围”内，在最接近源头的地方阻止了这个 touch 事件的传递，就像什么都没发生过。</p>
+
+<ul>
+  <li>代理方法 <code>gestureRecognizerShouldBegin</code></li>
+</ul>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="c1">// called when a gesture recognizer attempts to transition out of UIGestureRecognizerStatePossible. returning NO causes it to transition to UIGestureRecognizerStateFailed</span>
+</span><span class="line">
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizerShouldBegin:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>当一个手势将要尝试离开 UIGestureRecognizerStatePossible 进入下一个状态时，该方法被调用。这里返回 NO 会导致该手势进入 UIGestureRecognizerStateFailed 状态。默认返回 YES。注意该方法与上边那个方法的区别。上边的方法 <code>gestureRecognizer:shouldReceiveTouch:</code> 是在手势识别器 gestureRecognizer 开始识别手势之前被调用，即 gestureRecognizer 还未开始对手势进行分析。而这个方法被调用时，gestureRecognizer 已经开始对手势进行分析识别，且在将要尝试离开 UIGestureRecognizerStatePossible 进入下一个状态时，再给一次拦截机会。</p>
+
+<ul>
+  <li>最后两个代理方法：</li>
+</ul>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objc"><span class="line"><span class="c1">// called once per attempt to recognize, so failure requirements can be determined lazily and may be set up between recognizers across view hierarchies</span>
+</span><span class="line"><span class="c1">// return YES to set up a dynamic failure requirement between gestureRecognizer and otherGestureRecognizer</span>
+</span><span class="line"><span class="c1">//</span>
+</span><span class="line"><span class="c1">// note: returning YES is guaranteed to set up the failure requirement. returning NO does not guarantee that there will not be a failure requirement as the other gesture&#39;s counterpart delegate or subclass methods may return YES</span>
+</span><span class="line">
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldRequireFailureOfGestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">otherGestureRecognizer</span> <span class="n">NS_AVAILABLE_IOS</span><span class="p">(</span><span class="mi">7</span><span class="n">_0</span><span class="p">);</span>
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldBeRequiredToFailByGestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">otherGestureRecognizer</span> <span class="n">NS_AVAILABLE_IOS</span><span class="p">(</span><span class="mi">7</span><span class="n">_0</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这两个方法和手势的 <code>requireGestureRecognizerToFail:</code> 方法的作用类似，但会动态决定两个手势的互斥关系。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[简述 Crash 文件分析流程]]></title>
+    <link href="http://matrixzk.github.io/blog/20141220/crash-file-analysis/"/>
+    <updated>2014-12-20T16:05:12+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20141220/crash-file-analysis</id>
+    <content type="html"><![CDATA[<p>虽然现在已经有很多第三方的服务能帮你分析线上 App 的 Crash 文件，但有时还是难免要对单独某个 Crash 文件做分析，本文就是来介绍一下这个流程。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#section">测试环境</a></li>
+  <li><a href="#crash-">符号化 Crash 文件</a>    <ul>
+      <li><a href="#section-1">方法一</a></li>
+      <li><a href="#section-2">方法二</a></li>
+      <li><a href="#section-3">方法三</a></li>
+    </ul>
+  </li>
+  <li><a href="#app--dsym--uuid">关于 App 和 .dSYM 文件的 uuid</a></li>
+</ul>
+
+<h2 id="section">测试环境</h2>
+
+<p>前提：App 提交 AppStore 时不是在你的机子上操作的 archive。</p>
+
+<p>环境：Xcode 6</p>
+
+<p><strong>注意</strong>，下述方法的时效性比较强，因为苹果也一直在调整优化他们的解决方案。但总体来说应该是向上兼容的，流程只会越来越简单方便。</p>
+
+<h2 id="crash-">符号化 Crash 文件</h2>
+
+<h3 id="section-1">方法一</h3>
+
+<ol>
+  <li>从 Xcode 的 Window -&gt; Organizer -&gt; Archives 中通过右键 “Show in Finder” 拿到提交 AppStore 的 archive 文件 <code>*.xcarchive</code>；</li>
+  <li>右键 <code>*.xcarchive</code> “显示包内容”，拿到 yourAppName.app.dSYM 文件和 yourAppName.app 文件(该文件在你那里可能没有后缀)；</li>
+  <li>将上述的 yourAppName.app.dSYM 和 yourAppName.app 文件和你拿到的 <code>.crash</code> 文件放到同一个目录下(这里也可以通过其他方式不用把他们放一起，后边会讲到)；</li>
+  <li>打开 Xcode 的 Window -&gt; Devices，选中你的设备，点击 “View Device Logs”；</li>
+  <li>将 <code>.crash</code> 文件拖入上述打开面板的左侧，停几秒就会看到你的 crash 文件出现其中，选中，再隔几秒就会看到被符号化的 crash 文件了，OK。</li>
+</ol>
+
+<h3 id="section-2">方法二</h3>
+
+<p>将上述 1 拿到的 <code>*.xcarchive</code> 文件拖入你的机子的相应位置，此时直接将 <code>.crash</code> 文件拖入上述 4 打开的面板应该就可以了。</p>
+
+<h3 id="section-3">方法三</h3>
+
+<p>在上述 3 时，也可以不把 <code>.crash</code> 文件和那俩放到一起，比如那俩文件放在了 MyAppDSYM 目录下，则在命令行执行如下命令：
+mdimport MyAppDSYM/
+这之后直接执行上述 5 即可。</p>
+
+<h2 id="app--dsym--uuid">关于 App 和 .dSYM 文件的 uuid</h2>
+
+<p>通过如下命令可查看 App 的 uuid，<code>.crash</code> 文件中所显示的 App 的 uuid 应该和 <code>.app</code> 和 <code>.dSYM</code> 文件的 uuid 都是一致的。例如：</p>
+
+<p>首先说下什么是 UUID。每一个可执行程序都有一个 build UUID 来唯一标识。Crash 日志包含发生 crash 的这个 App 的 build UUID 以及 crash 发生的时候，应用加载的所有库文件的 build UUID。</p>
+
+<ol>
+  <li>
+    <p>拿到 yourAppName.app 的 uuid ：</p>
+
+    <p>命令：</p>
+
+    <pre><code> dwarfdump --uuid yourAppName.app/yourAppName
+</code></pre>
+
+    <p>举例：</p>
+
+    <pre><code> dwarfdump --uuid MyAppName.app/MyAppName
+</code></pre>
+
+    <p>结果示例：</p>
+
+    <pre><code> UUID: 78A868EF-49B3-3AAB-AB03-807DA6EF8567 (armv7) MyAppName.app/MyAppName
+ UUID: 96A04089-39CF-3BE2-84DD-F1FDA146EA39 (arm64) MyAppName.app/MyAppName
+</code></pre>
+  </li>
+  <li>
+    <p>拿到 yourAppName.app.dSYM 的 uuid ：</p>
+
+    <p>命令：</p>
+
+    <pre><code> dwarfdump --uuid yourAppName.app.dSYM
+</code></pre>
+
+    <p>举例：</p>
+
+    <pre><code> dwarfdump --uuid MyAppName.app.dSYM
+</code></pre>
+
+    <p>结果示例：</p>
+
+    <pre><code> UUID: 78A868EF-49B3-3AAB-AB03-807DA6EF8567 (armv7) MyAppName.app.dSYM/Contents/Resources/DWARF/MyAppName
+ UUID: 96A04089-39CF-3BE2-84DD-F1FDA146EA39 (arm64) MyAppName.app.dSYM/Contents/Resources/DWARF/MyAppName
+</code></pre>
+  </li>
+  <li>
+    <p>拿到 <code>*.crash</code> 文件的 uuid ：</p>
+
+    <p><strong>&lt; 方法一 &gt;</strong></p>
+
+    <p>命令：</p>
+
+    <pre><code> grep "yourAppName armv" crashFileName.crash
+</code></pre>
+
+    <p>示例：</p>
+
+    <pre><code> grep "MyAppName armv" 001.crash
+</code></pre>
+
+    <p>结果：</p>
+
+    <pre><code> 0x3d000 -   0x5c4fff +MyAppName armv7  &lt;78a868ef49b33aabab03807da6ef8567&gt; /private/var/mobile/Containers/Bundle/Application/81C16F53-6CB6-4CEC-80E3-7D65B61FF91B/MyAppName.app/MyAppName
+</code></pre>
+
+    <p><strong>&lt; 方法二 &gt;</strong></p>
+
+    <p>命令：</p>
+
+    <pre><code> grep --after-context=2 "Binary Images:" crashFileName.crash
+</code></pre>
+
+    <p>示例：</p>
+
+    <pre><code> grep --after-context=2 "Binary Images:" 001.crash
+</code></pre>
+
+    <p>结果：</p>
+
+    <pre><code> Binary Images:
+    0x3d000 -   0x5c4fff +MyAppName armv7  &lt;78a868ef49b33aabab03807da6ef8567&gt; /private/var/mobile/Containers/Bundle/Application/81C16F53-6CB6-4CEC-80E3-7D65B61FF91B/MyAppName.app/MyAppName
+ 0x2745d000 - 0x27549fff  RawCamera armv7  &lt;31a1ae8be0ea314e8b2892fc94a3e68a&gt; /System/Library/CoreServices/RawCamera.bundle/RawCamera
+</code></pre>
+  </li>
+</ol>
+
+<p>上述的 <code>&lt;&gt;</code> 内显示的就是相应的 uuid。</p>
+
+<p>另外，还有两种方法符号化 crash 文件，分别是命令行工具 symbolicatecrash 和命令行工具 atos。详细使用参考：<a href="http://wufawei.com/2014/03/symbolicating-ios-crash-logs/">分析iOS Crash文件：符号化iOS Crash文件的3种方法</a></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[OC内存管理那些事儿(3)：使用自动释放池块]]></title>
+    <link href="http://matrixzk.github.io/blog/20141113/memory-management-3-autoreleasePool/"/>
+    <updated>2014-11-13T20:00:00+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20141113/memory-management-3-autoreleasePool</id>
+    <content type="html"><![CDATA[<p>自动释放池块提供了一种机制，通过它我们在放弃一个对象的所有权时，可以避免该对象被立即释放掉(就像从一个方法返回一个对象那样)。通常情况下不需要创建自己的自动释放池的，但有些特殊情况就必须或者说有必要这样做。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#autorelease-pool-blocks">关于自动释放池块(Autorelease Pool Blocks)</a></li>
+  <li><a href="#section">使用局部自动释放池块来降低内存峰值</a></li>
+  <li><a href="#section-1">自动释放池块和线程</a></li>
+</ul>
+
+<h2 id="autorelease-pool-blocks">关于自动释放池块(Autorelease Pool Blocks)</h2>
+
+<p>使用<code>@autoreleasepool</code>来标记一个自动释放池块，例如：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="k">@autoreleasepool</span> <span class="p">{</span>
+</span><span class="line">    <span class="c1">// Code that creates autoreleased objects.</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>在自动释放池块的末尾，块内所有接收过<code>autorelease</code>消息的对象都会收到一个<code>release</code>消息，这些对象之前接收过多少次<code>autorelease</code>消息，此时就会接收到相应次数的<code>release</code>消息。</p>
+
+<p>和其他代码块一样，自动释放池块可以嵌套：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="k">@autoreleasepool</span> <span class="p">{</span>
+</span><span class="line">    <span class="c1">// ...</span>
+</span><span class="line">    <span class="k">@autoreleasepool</span> <span class="p">{</span>
+</span><span class="line">        <span class="c1">// ...</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">    <span class="p">...</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>但一般不会像上边那么用；通常的做法是，一个源文件中的某自动释放池块内的代码，去调用另一个源文件中包含在某自动释放池块内的代码。对于某给定的<code>autorelease</code>消息，会在发送该<code>autorelease</code>消息所在的自动释放池块的末尾处发送相应的<code>release</code>消息。</p>
+
+<p>Cocoa 总是期望代码都被执行在某个自动释放池块内，否则那些自动释放的对象( autoreleased )就不会接收到<code>release</code>消息，就会导致内存泄漏。(如果在自动释放池块外发送一个<code>autorelease</code>消息，Cocoa 会打印一条相应的错误信息日志。) AppKit 和 UIKit 框架会在一个自动释放池块内执行每个事件循环(event-loop，比如一个鼠标点击时间或者一个tap)。因此通常不需要自己创建自动释放池块，甚至连创建它们的代码都看不到。但是，<font color="red">有三种场景需要创建自己的自动释放池块</font>：</p>
+
+<ul>
+  <li>
+    <p>所写的程序不是基于 UI 框架，比如一个命令行工具。</p>
+  </li>
+  <li>
+    <p>所写的循环(loop)中创建了很多临时对象。</p>
+
+    <p>在一个循环进入下次迭代之前，应该使用自动释放池块处理当前循环内自动释放的临时对象。在循环内使用自动释放池块有助于降低应用的内存占用峰值。</p>
+  </li>
+  <li>
+    <p>开辟了一个二级( secondary )线程</p>
+
+    <p>必须在该线程开始执行时就创建自己的自动释放池块，否则会导致内存泄漏。(详情参考<a href="http://matrixzk.github.io/blog/20141113/memory-management-3-autoreleasePool/#section-1"><strong>自动释放池块和线程</strong></a>)</p>
+  </li>
+</ul>
+
+<h2 id="section">使用局部自动释放池块来降低内存峰值</h2>
+
+<p>许多程序创建的临时对象是自动释放的( autoreleased )。这些对象在程序运行到自动释放池块的结尾之前都会占据着程序的内存。在当前事件循环结束之前允许临时对象一直累积，在多数情况下不会导致过度的内存开销；但有时，创建大量的临时对象会导致内存占用大幅度升高，这时可以自己创建一个自动释放池块来及时处理下。在块的末尾，这些临时对象会被释放掉，内存占用通常也会因此而降下来。</p>
+
+<p>下边的例子展示了如何在一个<code>for</code>循环中使用局部自动释放池块：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="bp">NSArray</span> <span class="o">*</span><span class="n">urls</span> <span class="o">=</span> <span class="o">&lt;</span><span class="err">#</span> <span class="n">An</span> <span class="n">array</span> <span class="n">of</span> <span class="n">file</span> <span class="n">URLs</span> <span class="err">#</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span class="line"><span class="k">for</span> <span class="p">(</span><span class="bp">NSURL</span> <span class="o">*</span><span class="n">url</span> <span class="k">in</span> <span class="n">urls</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">@autoreleasepool</span> <span class="p">{</span>
+</span><span class="line">        <span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">;</span>
+</span><span class="line">        <span class="bp">NSString</span> <span class="o">*</span><span class="n">fileContents</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithContentsOfURL</span><span class="p">:</span><span class="n">url</span>
+</span><span class="line">                                         <span class="nl">encoding</span><span class="p">:</span><span class="n">NSUTF8StringEncoding</span> <span class="nl">error</span><span class="p">:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class="line">        <span class="cm">/* Process the string, creating and autoreleasing more objects. */</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>上述<code>for</code>循环每次处理一个文件。自动释放池块中每个发出过<code>autorelease</code>消息的对象(比如 fileContents )都会在块的末尾被释放掉。</p>
+
+<p>在自动释放池块之后，该块内的所有自动释放的对象都应该被认为是“已被释放的”。不要再给它发送消息或者将它返回给方法的调用者。如果一定要在自动释放池块外使用某临时产生的对象，可以在块内给它发送一个<code>retain</code>消息，然后在块外给它发送一个<code>autorelease</code>消息，例如：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="err">–</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nl">findMatchingObject</span><span class="p">:(</span><span class="kt">id</span><span class="p">)</span><span class="n">anObject</span> <span class="p">{</span>
+</span><span class="line">
+</span><span class="line">    <span class="kt">id</span> <span class="n">match</span><span class="p">;</span>
+</span><span class="line">    <span class="k">while</span> <span class="p">(</span><span class="n">match</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">        <span class="k">@autoreleasepool</span> <span class="p">{</span>
+</span><span class="line">
+</span><span class="line">            <span class="cm">/* Do a search that creates a lot of temporary objects. */</span>
+</span><span class="line">            <span class="n">match</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="nl">expensiveSearchForObject</span><span class="p">:</span><span class="n">anObject</span><span class="p">];</span>
+</span><span class="line">
+</span><span class="line">            <span class="k">if</span> <span class="p">(</span><span class="n">match</span> <span class="o">!=</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">                <span class="p">[</span><span class="n">match</span> <span class="k">retain</span><span class="p">];</span> <span class="cm">/* Keep match around. */</span>
+</span><span class="line">            <span class="p">}</span>
+</span><span class="line">        <span class="p">}</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="p">[</span><span class="n">match</span> <span class="n">autorelease</span><span class="p">];</span>   <span class="cm">/* Let match go and return it. */</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>在自动释放池块内给<code>match</code>发送<code>retain</code>，然后在块外给其发送<code>autorelease</code>来扩展其生命周期，这样<code>match</code>就可以在循环外接收消息了，并可以将其返回给<code>findMatchingObject:</code>方法的调用者。</p>
+
+<h2 id="section-1">自动释放池块和线程</h2>
+
+<p>Cocoa 应用程序中的每个线程都维持一个它自己的自动释放池块<strong>栈</strong>( stack )，如果要写一个 Foundation-only 的程序，或者开辟一个新的线程，这时就需要创建自己的自动释放池块。</p>
+
+<p>如果应用或线程的生命期很长( long-lived )，并且可能生成大量的自动释放的对象( autoreleased objects )，此时就需要使用自动释放池块(就像 AppKit 和 UIKit 在主线程中所做的那样)。否则，自动释放的对象的累积会导致内存占用持续增长。如果所开辟的线程不做涉及 Cocoa 的方法调用，就不需要使用自动释放池块了。</p>
+
+<p><br />
+<strong>注意：</strong> 如果所创建的二级线程使用<code>POSIX</code>线程 APIs 而不是<code>NSThread</code>，此时只有 Cocoa 在多线程模式下时才能使用 Cocoa。Cocoa 只有在开辟了它的第一个<code>NSThread</code>对象之后才进入多线程模式。为了在二级 POSIX 线程中使用 Cocoa，必须先至少开辟一个<code>NSThread</code>对象，它会立即退出。可以使用<code>NSThread</code>类的<code>isMultiThreaded</code>方法来检测 Cocoa 是否处于多线程模式。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[OC内存管理那些事儿(2)：内存管理实践]]></title>
+    <link href="http://matrixzk.github.io/blog/20141111/memory-management-2-practical/"/>
+    <updated>2014-11-11T20:00:51+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20141111/memory-management-2-practical</id>
+    <content type="html"><![CDATA[<p>虽然<a href="http://matrixzk.github.io/blog/20141109/memory-management-1-policy/"><strong>上篇文章</strong></a>中所介绍的基本概念简单明了，但仍有一些实用的套路可使内存管理更加简单，而且能帮忙确保在最大限度得减少资源需求的同时，程序依然能够可靠健壮得运行。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#section">使用存取器方法让内存管理变得更加简单</a>    <ul>
+      <li><a href="#section-1">使用存取器方法给属性赋值</a></li>
+      <li><a href="#initializer--dealloc-">不要在初始化( Initializer )方法和 dealloc 方法中使用存取器方法</a></li>
+    </ul>
+  </li>
+  <li><a href="#section-2">使用弱引用来避免循环引用</a></li>
+  <li><a href="#section-3">要避免对象在使用过程中被释放</a></li>
+  <li><a href="#dealloc-">不要在 dealloc 方法中管理稀缺资源</a></li>
+  <li><a href="#section-4">集合类持有它所包含对象的所有权</a></li>
+  <li><a href="#section-5">所有权策略通过引用计数实现</a></li>
+</ul>
+
+<h2 id="section">使用存取器方法让内存管理变得更加简单</h2>
+
+<p>如果类中有一个对象属性，就必须确保给该对象赋的任何值在使用的过程中都不会被释放掉。因此在给该对象赋值时就要显式得持有它。之后也必须确保释放所有当前所持有的对象。</p>
+
+<p>这些有时看起来可能有些冗余或者形式化，但如果使用存取器方法(<code>accessor method</code>)，在管理内存的过程中出错的几率将会大大降低。如果你的代码中的实例变量到处都是<code>retain</code>和<code>release</code>操作，那几乎可以确定，你已踏上了一条不归路。</p>
+
+<p>思考如下一个<code>Counter</code>类，它有一个<code>count</code>属性：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="k">@interface</span> <span class="nc">Counter</span> : <span class="bp">NSObject</span>
+</span><span class="line"><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">count</span><span class="p">;</span>
+</span><span class="line"><span class="k">@end</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这里的属性(<code>property</code>)声明了两个存取器方法(<code>accessor method</code>)。通常编译器能帮忙自动合成这两个方法，不过，看一下它们具体实现还是有好处的。</p>
+
+<p>在<code>get</code>访问器中，只是返回一个合成的实例变量，所以不需要<code>retain</code>或者<code>release</code>。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="bp">NSNumber</span> <span class="o">*</span><span class="p">)</span><span class="nf">count</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">_count</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>在<code>set</code>方法中，如果别人也按照相同的规则操作<code>count</code>，就不得不假设新的<code>count</code>随时可能被释放掉，所以此时应该持有它，即向它发送一个<code>retain</code>消息，以确保在使用它的过程中不会被释放掉。与此同时，应该给之前的<code>count</code>对象发送<code>release</code>消息以放弃对它的所有权(在 Objective-C 中时允许给<code>nil</code>发送消息的，所以即使<code>_count</code>还没被赋值，这里依然可以正常工作)。即使新旧两个值是同一个对象，也要在<code>[newCount retain]</code>之后给其发送<code>release</code>消息，毕竟你并不想无意中导致它被释放嘛。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setCount:</span><span class="p">(</span><span class="bp">NSNumber</span> <span class="o">*</span><span class="p">)</span><span class="nv">newCount</span> <span class="p">{</span>
+</span><span class="line">    <span class="p">[</span><span class="n">newCount</span> <span class="k">retain</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">_count</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line">    <span class="c1">// Make the new assignment.</span>
+</span><span class="line">    <span class="n">_count</span> <span class="o">=</span> <span class="n">newCount</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h3 id="section-1">使用存取器方法给属性赋值</h3>
+
+<p>假设要实现一个方法来重置<code>count</code>的值，有若干方案。第一种实现是，使用<code>alloc</code>创建一个<code>NSNumber</code>实例，为平衡所有权随后<code>release</code>它。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reset</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">zero</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSNumber</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithInteger</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">self</span> <span class="nl">setCount</span><span class="p">:</span><span class="n">zero</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">zero</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>第二种实现方式，使用<strong>便利构造函数</strong>( convenience constructor )来创建<code>NSNumber</code>对象，因此此时也就不需要<code>retain</code>或者<code>release</code>操作：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reset</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">zero</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSNumber</span> <span class="nl">numberWithInteger</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">self</span> <span class="nl">setCount</span><span class="p">:</span><span class="n">zero</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>注意，这两种方式都使用了<code>set</code>存取器。</p>
+
+<p>接下来的实现方式在简单的场景下也可以正常工作，这里看似避开了存取器方法，但这样做有时几乎肯定会导致出错(比如，当忘记<code>retain</code>或<code>release</code>时，或者改变了该实例变量的内存管理语义(<code>semantics</code>))。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reset</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">zero</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSNumber</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithInteger</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">_count</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line">    <span class="n">_count</span> <span class="o">=</span> <span class="n">zero</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p><strong>注意</strong>，如果使用了 <strong>KVO</strong> (key-value observing，即键值观察)，使用上述方式改变这个变量是不会引起 KVO 响应的。</p>
+
+<h3 id="initializer--dealloc-">不要在初始化( Initializer )方法和 dealloc 方法中使用存取器方法</h3>
+
+<p>初始化( Initializer )方法和<code>dealloc</code>方法，是唯一不该使用存取器方法来给实例变量赋值的地方。使用<code>number</code>对象初始化一个初始值为0的<code>counter</code>对象，可以如下实现<code>init</code>方法：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">init</span> <span class="p">{</span>
+</span><span class="line">    <span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="n">init</span><span class="p">];</span>
+</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">        <span class="n">_count</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSNumber</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithInteger</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>如果想通过一个<code>count</code>参数来初始化<code>counter</code>，可以如下实现一个<code>initWithCount:</code>方法：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">initWithCount:</span><span class="p">(</span><span class="bp">NSNumber</span> <span class="o">*</span><span class="p">)</span><span class="nv">startingCount</span> <span class="p">{</span>
+</span><span class="line">    <span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="n">init</span><span class="p">];</span>
+</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">        <span class="n">_count</span> <span class="o">=</span> <span class="p">[</span><span class="n">startingCount</span> <span class="k">copy</span><span class="p">];</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>由于<code>Counter</code>类有一个对象实例变量，所以它必须实现<code>dealloc</code>方法，在这个方法中给其所有实例变量发送一个<code>release</code>消息来放弃对它们的所有权，并在该方法最后调用父类即<code>super</code>的<code>dealloc</code>方法：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">dealloc</span> <span class="p">{</span>
+</span><span class="line">    <span class="p">[</span><span class="n">_count</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">super</span> <span class="n">dealloc</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="section-2">使用弱引用来避免循环引用</h2>
+
+<p><code>retain</code>一个对象就相当于创建了一个指向它的<strong>强引用</strong>(<code>strong reference</code>)。一个对象只有当它的所有强引用都被 release 后才会被释放掉(<code>deallocated</code>)。因此，这就有可能导致两个对象循环引用的问题，我们把这称为 <strong>retain cycle</strong>，即两个对象对彼此都有一个强引用(可能是两者间直接的强引用，也可能是通过一些其他的对象形成了一个首尾相接的强引用环)。</p>
+
+<p><img class="right" src="http://matrixzk.github.io/images/blog/20141111_retaincycles_2x.png" width="200" title="retaincycles" /></p>
+
+<p>右图所示的对象关系就有可能导致循环引用。这里的<code>Document</code>对象含有一个<code>Page</code>对象来表示文档的每一页。每个<code>Page</code>对象都保留一个对其所在的文档的引用。如果<code>Document</code>对象有一个指向<code>Page</code>对象的强引用，同时<code>Page</code>对象也有一个指向<code>Document</code>对象的强引用，这样它们两个就永远都不会被释放掉了。直到<code>Page</code>对象被释放后，<code>Document</code>对象的引用计数才会变为0，而<code>Page</code>对象也同样要等<code>Document</code>对象释放后才会被释放。</p>
+
+<p>解决这类循环引用问题的办法是使用弱引用(<code>weak reference</code>)。<strong>弱引用</strong>是指源对象不会持有它所引用的对象的一种无从属的关系。    </p>
+
+<p>然而为了维持<code>object graph</code>的完整性，有些地方必须使用强引用(如果只使用弱引用，右图中的 page 和 paragraph 就没有了持有者，也因此会被释放掉)。源于此，Cocoa 约定，“父”对象应该使用强引用来持有它的“孩子们”(即属性)，而“孩子们”在引用“父”对象时应该使用弱引用。</p>
+
+<p>因此，上图中的<code>document</code>对象有一个指向<code>page</code>对象的强引用(以持有它)，而<code>page</code>对象用一个弱引用来指向<code>document</code>对象(不持有它)。</p>
+
+<p>比如在 Cocoa 中有以下几个地方就使用到了弱引用，tableView 的 data source(数据源)，outlineView 的 item，通知的观察者，以及各种<code>target</code>和<code>delegate</code>。</p>
+
+<p>当给通过弱引用所持有的对象发送消息时要特别小心。给一个已被释放的对象发送消息，会导致应用 crash。必须清楚地知道一个对象何时是无效的。在多数情况下，被弱引用的对象要知道哪些对象弱引用了它，并且负责在它被释放时通知这些对象。
+<font color="blue">
+    比如，当在通知中心( notification center )注册一个对象时，通知中心持有的是这个对象的弱引用，并在相应的通知发出时给它发送消息。当这个对象被释放时，同时应该在通知中心把它注销掉，这样可以防止这之后通知中心再给这个已被释放的对象发送消息。同样的，当一个 delegate 对象被释放时，应该给相应的对象发送一个以 nil 为参数的 setDelegate: 消息，以移除它对该 delegate 的引用。上述这些消息通常在对象的 dealloc 方法中发送。
+</font>
+<br /><strong>译者注：</strong> 当一个对象被释放后，如果没有显式得给它置为<code>nil</code>，它就成了一个野指针，此时再给它发送消息，会导致一个报错为<code>EXC_BAD_ACCESS</code>的 crash。</p>
+
+<h2 id="section-3">要避免对象在使用过程中被释放</h2>
+
+<p>Cocoa 的所有权策略指出，获取来的对象通常应该确保在使用它的方法的整个作用域内都始终有效。同时也要确保可以放心得从当前作用域中返回该对象而不用担心它在某个时刻被释放掉。从<code>getter</code>方法返回的是一个缓存的实例变量还是一个计算得来的值并不重要，重要的是在任何时候用到这个对象时，它都应该是始终有效的。</p>
+
+<p>对于上述规则有一些例外情况，大概可分为如下两类：</p>
+
+<ol>
+  <li>
+    <p>当对象被从基本的集合类中移除时。</p>
+
+    <pre><code> heisenObject = [array objectAtIndex:n];
+ [array removeObjectAtIndex:n];
+ // heisenObject could now be invalid.
+</code></pre>
+
+    <p>当一个对象从基本的集合类中被移除时，它会接收到一个<code>release</code>消息(而不是<code>autorelease</code>)。如果这个集合是该被移除对象的唯一持有者，该对象(此例中的<code>heisenObject</code>)将会立即被释放掉。</p>
+  </li>
+  <li>
+    <p>当一个“父对象”被释放时。</p>
+
+    <pre><code> id parent = &lt;#create a parent object#&gt;;
+ // ...
+ heisenObject = [parent child] ;
+ [parent release]; // Or, for example: self.parent = nil;
+ // heisenObject could now be invalid.
+</code></pre>
+
+    <p>有时通过其他对象获取到一个对象，然后直接或间接得 release 这个父对象。如果 release 后这个父对象被释放掉了，而这个父对象又是该子对象的唯一持有者，那么该子对象(此例中的<code>heisenObject</code>)将会同时被释放掉(假设这里的父对象在其<code>dealloc</code>方法中对其发送的是<code>release</code>而非<code>autorelease</code>消息)。</p>
+  </li>
+</ol>
+
+<p>为了避免这些情况，应该在接收到上边的<code>heisenObject</code>后 retain 它，并负责在你不再使用它时将其 release。例如：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="n">heisenObject</span> <span class="o">=</span> <span class="p">[[</span><span class="n">array</span> <span class="nl">objectAtIndex</span><span class="p">:</span><span class="n">n</span><span class="p">]</span> <span class="k">retain</span><span class="p">];</span>
+</span><span class="line"><span class="p">[</span><span class="n">array</span> <span class="nl">removeObjectAtIndex</span><span class="p">:</span><span class="n">n</span><span class="p">];</span>
+</span><span class="line"><span class="c1">// Use heisenObject...</span>
+</span><span class="line"><span class="p">[</span><span class="n">heisenObject</span> <span class="k">release</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="dealloc-">不要在 dealloc 方法中管理稀缺资源</h2>
+
+<p>通常不应该在<code>dealloc</code>方法中管理稀缺资源( scarce resources )，比如文件描述符( file descriptors )、网络连接和缓冲池( buffers )或缓存( caches )。特别注意，在设计类时不应该想当然得认为<code>dealloc</code>方法会在你认为的时刻被调用。有时由于某个 bug
+或者应用被销毁掉( tear-down )，<code>dealloc</code>的调用可能会被延迟，或者干脆就不会被调用。</p>
+
+<p>如果你的类有一个管理稀缺资源的属性，那么通常应该在你认为不再需要这些资源时，告知这个属性，先让它把这些资源“清理掉”，然后再 release 这个属性，这之后<code>dealloc</code>方法将会被调用。这样做的好处是，即使<code>dealloc</code>方法没被调用也不会引其他问题。</p>
+
+<p>如果试图在<code>dealloc</code>方法顶部进行资源管理的操作，很容易引起问题。比如：</p>
+
+<ol>
+  <li>
+    <p><code>object graph</code>被销毁时的顺序依赖关系</p>
+
+    <p><code>object graph</code>的销毁机制是内在无序的，尽管我们通常期望也确实得到了一个特定的顺序，但这个是不可靠的。例如，如果一个对象被意外得通过 autorelease 而非 release 的方式释放掉了，其 <code>object graph</code> 的销毁顺序就会被改变，并可能导致一些未知的结果。</p>
+  </li>
+  <li>
+    <p>稀缺资源未被回收</p>
+
+    <p>会导致内存泄漏的 bug 必须修复，它们通常不会立刻使程序崩溃。然而，如果稀缺资源没有在希望释放的时候被释放掉，这可能会导致更严重的问题。比如，如果应用耗尽了文件描述符( file descriptor )，用户就不能保存数据了。</p>
+  </li>
+  <li>
+    <p>资源清理的逻辑在错误的线程中执行</p>
+
+    <p>如果对象在一个意外的时间点儿被 autorelease，无论此时它处于哪个线程的自动释放池中，都会被释放掉。这对于那些只能在某一个线程中被访问的资源，很可能是致命的。</p>
+  </li>
+</ol>
+
+<h2 id="section-4">集合类持有它所包含对象的所有权</h2>
+
+<p>当把一个对象添加到一个集合(比如<code>array</code>，<code>dictionary</code>，或<code>set</code>)中时，该集合将持有这个对象。当该对象从这个集合中移除，或者这个集合本身被释放时，这个集合释放该对象。因此，如果想创建一个 number 数组，有如下两种实现方式：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">array</span> <span class="o">=</span> <span class="o">&lt;</span><span class="err">#</span><span class="n">Get</span> <span class="n">a</span> <span class="n">mutable</span> <span class="n">array</span><span class="err">#</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span class="line"><span class="bp">NSUInteger</span> <span class="n">i</span><span class="p">;</span>
+</span><span class="line"><span class="c1">// ...</span>
+</span><span class="line"><span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">convenienceNumber</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSNumber</span> <span class="nl">numberWithInteger</span><span class="p">:</span><span class="n">i</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">array</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">convenienceNumber</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>在这种情况下，由于没有调用 <code>alloc</code>，因此也就不需要调用<code>release</code>。这里不需要<code>retain</code>新创建的 number ( convenienceNumber )，因为数组将会替你做。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">array</span> <span class="o">=</span> <span class="o">&lt;</span><span class="err">#</span><span class="n">Get</span> <span class="n">a</span> <span class="n">mutable</span> <span class="n">array</span><span class="err">#</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span class="line"><span class="bp">NSUInteger</span> <span class="n">i</span><span class="p">;</span>
+</span><span class="line"><span class="c1">// ...</span>
+</span><span class="line"><span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSNumber</span> <span class="o">*</span><span class="n">allocedNumber</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSNumber</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithInteger</span><span class="p">:</span><span class="n">i</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">array</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">allocedNumber</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">allocedNumber</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>在这种情况下，由于 number 是通过 <code>alloc</code> 创建的，所以需要在当前 <code>for</code> 循环的作用域内给其发送 <code>release</code> 消息(来平衡 alloc)。这里不需要<code>retain</code>新创建的 number ( convenienceNumber )，因为数组将会替你做。由于数组在通过<code>addObject:</code>添加 number 时 retain 了它，所以在该数组内它将不会被释放掉。</p>
+
+<p>为了更好的理解上述问题，我们站在集合类实现者的角度来看。为了确保所有你所托管的对象都不会在你这里突然消失掉，就需要在它们传进来时给其发送一个<code>retain</code>消息。当他们被移除时，发送一个对应的<code>release</code>消息，并且当你被释放时，此时所持有的所有对象都应该在你自己的<code>dealloc</code>方法中接收到一个<code>release</code>消息。</p>
+
+<h2 id="section-5">所有权策略通过引用计数实现</h2>
+
+<p>所有权策略是基于引用计数(通常在<code>retain</code>方法之后称之为<code>retain count</code>)实现的。每个对象都有一个引用计数。</p>
+
+<ul>
+  <li>当创建一个对象时，其引用计数为<font color="red">1</font>.</li>
+  <li>当给一个对象发送<code>retain</code>消息时，其引用计数<font color="red">加1</font>.</li>
+  <li>当给一个对象发送<code>release</code>消息时，其引用计数<font color="red">减1</font>.
+<br />当给一个对象发送<code>autorelease</code>消息时，其引用计数将会在该自动释放池结束时<font color="red">减1</font>.</li>
+  <li>当一个对象的引用计数减为<font color="red">0</font>时，它将被释放掉。</li>
+</ul>
+
+<p><strong>重要：</strong> 不要试图让对象给出其当前精确的引用计数。这个结果通常是<font color="red">不准确</font>的，因为可能有你并不知道的 framework 的对象也 retain 了该对象。在调试内存管理问题时，只需要把注意力放在确保你的代码遵从上述所有权规则就行了。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[OC内存管理那些事儿(1)：内存管理策略]]></title>
+    <link href="http://matrixzk.github.io/blog/20141109/memory-management-1-policy/"/>
+    <updated>2014-11-09T20:00:51+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20141109/memory-management-1-policy</id>
+    <content type="html"><![CDATA[<p>在引用计数环境下用于内存管理的基本模型，是由 <strong>NSObject</strong> <code>protocol</code>中所定义的一些方法，结合一套标准的方法命名约定共同提供的。<strong>NSObject</strong> 类还定义了一个<code>dealloc</code>方法，该方法会在对象被释放时自动调用。本文将讲解在 Cocoa 编程中所需了解的关于正确进行内存管理的基本规则，并提供一些正确用法的示例。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#section">内存管理的基本规则</a>    <ul>
+      <li><a href="#section-1">一个简单的例子</a></li>
+      <li><a href="#autorelease--release-">使用 autorelease 延迟发送 release 消息</a></li>
+      <li><a href="#reference">你不具有通过引用(<code>reference</code>)返回的对象的所有权</a></li>
+    </ul>
+  </li>
+  <li><a href="#dealloc-">实现 dealloc 方法以释放所持有的对象</a></li>
+  <li><a href="#core-foundation-">Core Foundation 使用类似的规则</a></li>
+</ul>
+
+<h2 id="section">内存管理的基本规则</h2>
+
+<p>对象管理模型基于对象所有权。每个对象都有一或多个持有者(<code>owner</code>)。只要某对象还有一个持有者，它就不会被释放掉。如果一个对象没有了持有者，运行时系统(<code>runtime system</code>)就会自动将其销毁掉。为了确保让你清晰地意识到何时持有了一个对象，Cocoa 采用了如下策略：</p>
+
+<ul>
+  <li>
+    <p><strong>只要是你创建的对象，你就拥有其所有权</strong>
+<br />使用名字以<code>alloc</code>, <code>new</code>, <code>copy</code> 或者 <code>mutableCopy</code> 开头的方法所创建对象(比如,<code>alloc</code>, <code>newObject</code>, 或者<code>mutableCopy</code>)。</p>
+  </li>
+  <li>
+    <p><strong>使用<code>retain</code>来获取对象的所有权</strong>
+<br />一个获取到的对象通常要确保它在被接收的方法内是始终有效的，并且该方法也要确保安全得将该对象返回给它的调用者。使用<code>retain</code>有如下两个场景：
+<br />(1) 在存取器(<code>accessor</code>)方法或<code>init</code>方法的实现中，拿到一个想要存储为属性值的对象的所有权；
+<br />(2) 防止一个对象因其他操作的副作用而变成无效的(就像在<a href="http://matrixzk.github.io/blog/20141111/memory-management-2-practical/#section-3"> 要避免对象在使用过程中被释放 </a>中所阐述的那样)。</p>
+  </li>
+  <li>
+    <p><strong>当不再需要一个对象时，必须要放弃对它的所有权</strong>
+<br />通过给一个对象发送<code>release</code>消息或者<code>autorelease</code>消息来放弃持有它。在 Cocoa 的惯用语中，放弃对一个对象的所有权通常被称为释放(release)一个对象。</p>
+  </li>
+  <li>
+    <p><strong>如果不是某对象的持有者，不要执行放弃其所有权的操作</strong>
+<br />这只是前边几条策略规则的一个推论，在这里明确阐述下。</p>
+  </li>
+</ul>
+
+<h3 id="section-1">一个简单的例子</h3>
+
+<p>为了举例说明上述策略，思考如下代码片段：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">{</span>
+</span><span class="line">    <span class="n">Person</span> <span class="o">*</span><span class="n">aPerson</span> <span class="o">=</span> <span class="p">[[</span><span class="n">Person</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class="line">    <span class="c1">// ...</span>
+</span><span class="line">    <span class="bp">NSString</span> <span class="o">*</span><span class="n">name</span> <span class="o">=</span> <span class="n">aPerson</span><span class="p">.</span><span class="n">fullName</span><span class="p">;</span>
+</span><span class="line">    <span class="c1">// ...</span>
+</span><span class="line">    <span class="p">[</span><span class="n">aPerson</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>对象<code>Person</code>是由<code>alloc</code>方法创建的，所以随后在不再需要它时向它发送了<code>release</code>消息。这里的<code>name</code>不是通过附带所有权的方法(<code>the owning methods</code>)取到的，所以不必向其发送<code>release</code>消息。值得注意的是，本例中使用了<code>release</code>而不是<code>autorelease</code>。</p>
+
+<h3 id="autorelease--release-">使用 autorelease 延迟发送 release 消息</h3>
+
+<p>当需要延迟发送<code>release</code>消息时，使用<code>autorelease</code>，特别是在要从一个方法中返回一个对象时。比如，可以像这样实现上例中的<code>fullName</code>方法：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">fullName</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[[[</span><span class="bp">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFormat</span><span class="p">:</span><span class="s">@&quot;%@ %@&quot;</span><span class="p">,</span>
+</span><span class="line">                                          <span class="nb">self</span><span class="p">.</span><span class="n">firstName</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">lastName</span><span class="p">]</span> <span class="n">autorelease</span><span class="p">];</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">string</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>你将持有这里返回的通过<code>alloc</code>创建的<code>string</code>。按照内存管理的规则，在你丢掉对<code>string</code>的引用之前，必须先放弃对它的所有权。然而，这里如果使用<code>release</code>，<code>string</code>将会在被返回前就被释放掉(该方法将返回一个无效的对象)。使用<code>autorelease</code>，表示你想要放弃其所有权，但允许该方法的调用者在这里返回的<code>string</code>被释放前使用它。</p>
+
+<p><code>fullName</code>方法的实现也可以像这样：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">fullName</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;%@ %@&quot;</span><span class="p">,</span>
+</span><span class="line">                                 <span class="nb">self</span><span class="p">.</span><span class="n">firstName</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">lastName</span><span class="p">];</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">string</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>根据上述的基本规则，这里你会持有通过<code>stringWithFormat:</code>返回的<code>string</code>，所以可以放心得从该方法中返回<code>string</code>。</p>
+
+<p>作为对比，如下实现是<font color="red">错误</font>的：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">fullName</span> <span class="p">{</span>
+</span><span class="line">    <span class="bp">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFormat</span><span class="p">:</span><span class="s">@&quot;%@ %@&quot;</span><span class="p">,</span>
+</span><span class="line">                                         <span class="nb">self</span><span class="p">.</span><span class="n">firstName</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">lastName</span><span class="p">];</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">string</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>依据上述命名约定，<code>fullName</code>方法的调用者并不认为自己持有了这里所返回的<code>string</code>，因此它也就没有理由释放所返回的<code>string</code>，于是，这里就导致了内存泄漏。</p>
+
+<h3 id="reference">你不具有通过引用(<code>reference</code>)返回的对象的所有权</h3>
+
+<p>Cocoa 中的某些方法会指定通过引用(<code>reference</code>)返回一个对象(也就是说，它们接受一个<code> ClassName **</code>或<code>id *</code>类型的参数)。一个常见的例子是，使用<code>NSError</code>对象来包含某个可能出现的 error 的相关信息。比如，<code>initWithContentsOfURL:options:error:</code> (NSData) 和 <code>initWithContentsOfFile:encoding:error:</code> (NSString)。</p>
+
+<p>前边所述的规则同样适用于这种情况。当调用上述方法时，由于你并没有创建<code>NSError</code>对象，也就不具有其所有权，因此也就没义务释放它，就像这个例子：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="bp">NSString</span> <span class="o">*</span><span class="n">fileName</span> <span class="o">=</span> <span class="o">&lt;</span><span class="err">#</span><span class="n">Get</span> <span class="n">a</span> <span class="n">file</span> <span class="n">name</span><span class="err">#</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span class="line"><span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">;</span>
+</span><span class="line"><span class="bp">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithContentsOfFile</span><span class="p">:</span><span class="n">fileName</span>
+</span><span class="line">                        <span class="nl">encoding</span><span class="p">:</span><span class="n">NSUTF8StringEncoding</span> <span class="nl">error</span><span class="p">:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class="line"><span class="k">if</span> <span class="p">(</span><span class="n">string</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="c1">// Deal with error...</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line"><span class="c1">// ...</span>
+</span><span class="line"><span class="p">[</span><span class="n">string</span> <span class="k">release</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="dealloc-">实现 dealloc 方法以释放所持有的对象</h2>
+
+<p>在<code>NSObject</code>类中有一个<code>dealloc</code>方法，它将在一个对象没有任何持有者时被自动调用，该对象所占内存也将被回收 – 在 Cocoa 的惯用语中这被称为<code>freed</code>或者<code>deallocated</code>(释放)。<code>dealloc</code>方法所扮演的角色是，释放对象所占用的内存，处理它所占用的资源，包括对象的所有实例变量的所有权。</p>
+
+<p>下面以<code>Person</code>类为例来说明下其<code>dealloc</code>方法的一种实现方式：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="k">@interface</span> <span class="nc">Person</span> : <span class="bp">NSObject</span>
+</span><span class="line"><span class="k">@property</span> <span class="p">(</span><span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">firstName</span><span class="p">;</span>
+</span><span class="line"><span class="k">@property</span> <span class="p">(</span><span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">lastName</span><span class="p">;</span>
+</span><span class="line"><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">fullName</span><span class="p">;</span>
+</span><span class="line"><span class="k">@end</span>
+</span><span class="line">
+</span><span class="line"><span class="k">@implementation</span> <span class="nc">Person</span>
+</span><span class="line"><span class="c1">// ...</span>
+</span><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">dealloc</span>
+</span><span class="line">    <span class="p">[</span><span class="n">_firstName</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="n">_lastName</span> <span class="k">release</span><span class="p">];</span>
+</span><span class="line">    <span class="p">[</span><span class="nb">super</span> <span class="n">dealloc</span><span class="p">];</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line"><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p><strong>重要：</strong>
+<br />(1) 千万不要直接调用另一个类的<code>dealloc</code>方法；
+<br />(2) 必须在所实现的<code>dealloc</code>方法的<font color="blue">末尾</font>调用<font color="red">父类</font>(<code>superclass</code>)的<code>dealloc</code>方法；
+<br />(3) 不要把对系统资源的管理纳入对象的生命周期 (详情参考<a href="http://matrixzk.github.io/blog/20141111/memory-management-2-practical/#dealloc-"> 不要在 dealloc 方法中管理稀缺资源 </a>)；
+<br />(4) 当应用终止后，对象的<code>dealloc</code>方法可能并没有被调用。由于程序所占用的内存会在其终止时被自动清理掉，所以只需让操作系统去清理其所占用的资源就行，这会比挨个儿调用那些内存管理方法更高效。</p>
+
+<h2 id="core-foundation-">Core Foundation 使用类似的规则</h2>
+
+<p>Core Foundation 对象的内存管理规则与此类似 (详情参阅 <a href="https://developer.apple.com/library/ios/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/CFMemoryMgmt.html#//apple_ref/doc/uid/10000127i"> Memory Management Programming Guide for Core Foundation </a>)。然而，Cocoa 与 Core Foundation 的命名约定有所不同。需要注意，Core Foundation 的创建规则 (参考 <a href="https://developer.apple.com/library/ios/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html#//apple_ref/doc/uid/20001148-103029"> The Create Rule </a>)并不适用于返回 Objective-C 对象的方法。例如，在如下所示的代码片段中，这里不用负责释放<code>myInstance</code>的内存：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="n">MyClass</span> <span class="o">*</span><span class="n">myInstance</span> <span class="o">=</span> <span class="p">[</span><span class="n">MyClass</span> <span class="n">createInstance</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[OC内存管理那些事儿(0)：关于内存管理]]></title>
+    <link href="http://matrixzk.github.io/blog/20141107/memory-management-0-introduction/"/>
+    <updated>2014-11-07T20:08:51+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20141107/memory-management-0-introduction</id>
+    <content type="html"><![CDATA[<p>不论哪门编程语言，内存管理都一直是一个广受关注的问题，包括有垃圾回收机制的 Java (前几天还听几个搞 Android 的小伙伴在热切的讨论 Java 中的内存管理)。作为有节操的 iOS 开发者，大家对内存管理问题更是时刻保持着高度的使命感。这两年新开的项目可能都已经使用 <code>ARC</code> ( Automatic Reference Counting )了。想想自己刚从 <code>MRR</code> ( manual retain-release ) 往 <code>ARC</code> 过渡那会儿，虽然苹果官方一再强调可以放心得使用 <code>ARC</code>，但由于在 <code>ARR</code> 下谨慎惯了，一时还是不太敢放心的把内存管理全都交给编译器去做。现在再看 <code>ARC</code>，确实是个可以放心托付的家伙，而且它在编译器级对内存管理做了更进一步的优化。其实当苹果在 Xcode 中内置了强大的静态分析器( Clang Static Analyzer )时我就想，既然内存泄漏隐患都能在编译阶段这么精准得定位到，为什么不更进一步直接把它们解决了呢。后来果然不久苹果就推出了强大的 <code>ARC</code> 机制，直接帮开发者把内存管理的事儿给做了，真是家强大的公司。虽然在 <code>ARC</code> 下不用太过多的关注内存管理问题，但是对 OC 的内存管理机制有一个深刻的理解还是非常有必要的，而且有时你也可能不得不去维护由于历史原因还在使用 <code>MRR</code> 的项目。<!-- more -->今天再看官方文档<a href="https://developer.apple.com/library/ios/documentation/cocoa/conceptual/memorymgmt/Articles/MemoryMgmt.html#//apple_ref/doc/uid/10000011-SW1"> Advanced Memory Management Programming Guide </a>时，依然感觉很精练，故决定将它翻译一下。</p>
+
+<!--
+另外还准备翻译以下两篇来组成一个关于OC内存管理的系列：
+
+* [Transitioning to ARC Release Notes](https://developer.apple.com/library/ios/releasenotes/ObjectiveC/RN-TransitioningToARC/Introduction/Introduction.html)
+* [Memory Management Programming Guide for Core Foundation](https://developer.apple.com/library/ios/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/CFMemoryMgmt.html#//apple_ref/doc/uid/10000127-SW1)
+<!-->
+
+<p>PS. 在苹果的助推下，开发者很快的从 MRR 过渡到了 ARC，包括一些固执的老程序员，这让人不禁猜测，swift 是不是也会在苹果官方的助推下，在一两年内实现从 OC 到 swift 的全面转换呢？让我们拭目以待。</p>
+
+<ul id="markdown-toc">
+  <li><a href="#section">概述</a></li>
+  <li><a href="#section-1">防止内存泄漏的最佳实践</a></li>
+  <li><a href="#section-2">使用分析工具调试内存问题</a></li>
+</ul>
+
+<h2 id="section">概述</h2>
+
+<p>应用程序的内存管理是这样一个过程：在程序运行时分配内存，使用它，然后在不需要它时将其释放。一支优秀的程序通常会尽量少得使用内存。在 Objective-C 中，它也可被看做是在很多块数据和代码之间，为有限的内存资源分配使用权的一种方式。读完这个系列之后你将会了解到，要想控制好应用的内存使用，就需要精确得管理对象的生命周期，并在不再需要它们时将其释放掉。</p>
+
+<p>虽然内存管理通常只针对单个对象，但是应该把管理<code>object graphs</code>作为目标。要确保已不再需要的对象所占的内存都被全部释放。</p>
+
+<p><img class="center" src="http://matrixzk.github.io/images/blog/20141107_memory_management_2x.png" width="600" title="memory_management" /></p>
+
+<p>Objective-C 提供了两种管理内存的方式：</p>
+
+<ol>
+  <li>
+    <p>第一种方式在本系列中被称为<code>manual retain-release</code>，或者称为 <strong>MRR</strong>，你需要监控所创建的对象来精确地管理内存。这是通过由 Foundation 的<code>NSObject</code>类结合运行时环境所提供的引用计数( reference counting )模型来实现的。</p>
+  </li>
+  <li>
+    <p>第二种方式被称为自动引用计数，即 <strong>ARC</strong> ( Automatic Reference Counting )，使用和 MRR 一样的引用计数的方式，但不同的是该方式会在<strong>编译时期</strong>为你在适当的位置插入相应的内存管理方法调用。强烈建议在新的项目中开始使用 ARC。如果使用 ARC，可以说就不需要去理解即将介绍的有关 MRR 的知识了，但友情提示下，这些知识在某些情况下依然是需要的。更多关于 ARC 的内容，请参阅<a href="https://developer.apple.com/library/ios/releasenotes/ObjectiveC/RN-TransitioningToARC/Introduction/Introduction.html"> Transitioning to ARC Release Notes </a>。</p>
+  </li>
+</ol>
+
+<h2 id="section-1">防止内存泄漏的最佳实践</h2>
+
+<p>不当的内存管理会导致两类问题：</p>
+
+<ul>
+  <li>
+    <p>释放或覆盖了仍在使用的数据
+<br />这会引起内存污染( memory corruption )，通常会导致应用 crash，或者更糟，覆盖掉用户数据。</p>
+  </li>
+  <li>
+    <p>没有释放掉已不再使用的数据，导致内存泄漏( memory leak )
+<br />内存泄漏是指被分配的内存已不再使用了，却没被释放掉。内存泄漏会使应用所占用的内存持续增加，从而导致糟糕的系统性能，或者应用直接被系统干掉。</p>
+  </li>
+</ul>
+
+<p>站在引用计数的角度去考虑内存管理问题，常常事与愿违，因为这样往往更倾向于根据实现细节去考虑内存管理问题，而不是根据实际目标。应该站在对象持有者和<code>object graphs</code>的角度去考虑内存管理问题。</p>
+
+<p>Cocoa 采用了一套明确的命名约定，来表明你当前是否拥有通过某方法所返回对象的所有权。详情参阅 <a href="http://matrixzk.github.io/blog/20141109/memory-management-1-policy/">内存管理策略</a> ( 原文：<a href="https://developer.apple.com/library/ios/documentation/cocoa/conceptual/memorymgmt/Articles/mmRules.html#//apple_ref/doc/uid/20000994-BAJHFBGH"> Memory Management Policy </a>)。</p>
+
+<p>虽然基本的策略很简单，但仍有一些实用的套路可使内存管理更加简单，而且能帮助确保在最大限度得减少程序资源需求的同时，程序依然能够可靠健壮得运行。详情参阅 <a href="http://matrixzk.github.io/blog/20141111/memory-management-2-practical/">内存管理实践</a> ( 原文：<a href="https://developer.apple.com/library/ios/documentation/cocoa/conceptual/memorymgmt/Articles/mmPractical.html#//apple_ref/doc/uid/TP40004447-SW1"> Practical Memory Management </a>)。</p>
+
+<p>自动释放池块( Autorelease Pool Blocks )提供了一个可以延迟给对象发送release消息的机制。它的使用场景是，当想要放弃某对象的所有权，但又想避免它被直接释放掉(比如在要从某方法返回一个对象时)。详情参阅 <a href="http://matrixzk.github.io/blog/20141113/memory-management-3-autoreleasePool/">使用自动释放池块</a> ( 原文：<a href="https://developer.apple.com/library/ios/documentation/cocoa/conceptual/memorymgmt/Articles/mmAutoreleasePools.html#//apple_ref/doc/uid/20000047-CJBFBEDI"> Using Autorelease Pool Blocks </a>)。</p>
+
+<h2 id="section-2">使用分析工具调试内存问题</h2>
+
+<p>使用 Xcode 内置的 Clang Static Analyzer (静态分析器)，可以在编译时期找出代码所存在的内存问题。</p>
+
+<p>如果内存问题仍然出现，还有一些其他的工具和技巧能确定和诊断问题所在。</p>
+
+<ul>
+  <li>
+    <p>在 <strong>Technical Note TN2239</strong> 和<a href="https://developer.apple.com/library/ios/technotes/tn2239/_index.html#//apple_ref/doc/uid/DTS40010638"> iOS Debugging Magic </a>中介绍了很多与这些工具和技巧相关的内容，特别是<code>NSZombie</code>的使用，都能很好得帮忙定位到过度释放( over-released )的对象。</p>
+  </li>
+  <li>
+    <p>使用 <strong>Instruments</strong> 来追踪引用计数事件，查找内存泄漏。详情参阅<a href="https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/InstrumentsUserGuide/Introduction/Introduction.html#//apple_ref/doc/uid/TP40004652"> Instruments User Guide </a>中的<a href="https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/InstrumentsUserGuide/GatheringDatafortheFirstTime/GatheringDatafortheFirstTime.html#//apple_ref/doc/uid/TP40004652-CH5"> Collecting Data on Your App </a>章节。</p>
+  </li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[一个完美的 Git 分支管理模型 (Git工作流)]]></title>
+    <link href="http://matrixzk.github.io/blog/20141104/git-flow-model/"/>
+    <updated>2014-11-04T16:08:51+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20141104/git-flow-model</id>
+    <content type="html"><![CDATA[<p>众所周知，<a href="http://git-scm.com/">Git</a> 是目前最优秀的版本控制工具。但很多团队在使用Git进行协作开发的过程中，并没有形成一个清晰规范的流程。本文的作者<a href="http://nvie.com/"> Vincent Driessen </a>向我们介绍了一个相对比较完美的分支管理策略，依照这个策略基本可以保证团队开发和版本发布有条不紊得进行。Vincent Driessen还据此实现了一个 Git 扩展集<a href="https://github.com/nvie/gitflow"> git-flow </a>，它为本文所介绍的分支管理模型提供了一些较高层次的<code>repository operations</code>(库操作)。其本质是对下文所述的相关Git命令集进行进一步封装，并提供一些友好的命令行提示，具体可参考<a href="http://danielkummer.github.io/git-flow-cheatsheet/index.zh_CN.html"> git-flow 备忘清单</a>。本文译自<a href="http://nvie.com/posts/a-successful-git-branching-model/"> A successful Git branching model </a>，推荐原汁原味的阅读。</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#git-why-git">为什么选Git (Why Git?)</a></li>
+  <li><a href="#decentralized-but-centralized">分散而集中 (Decentralized but centralized)</a></li>
+  <li><a href="#the-main-branches">主要分支 (The main branches)</a></li>
+  <li><a href="#supporting-branches">辅助分支 (Supporting branches)</a>    <ul>
+      <li><a href="#feature-branches">功能分支 (Feature branches)</a>        <ul>
+          <li><a href="#section">创建功能分支</a></li>
+          <li><a href="#develop">将已完成的新功能合并到<code>develop</code>分支</a></li>
+        </ul>
+      </li>
+      <li><a href="#release-branches">预发布分支 (Release branches)</a>        <ul>
+          <li><a href="#section-1">创建预发布分支</a></li>
+          <li><a href="#section-2">结束预发布分支</a></li>
+        </ul>
+      </li>
+      <li><a href="#hotfix-branches">热修复分支 (Hotfix branches)</a>        <ul>
+          <li><a href="#section-3">创建热修复分支</a></li>
+          <li><a href="#section-4">结束热修复分支</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="#section-5">总结</a></li>
+</ul>
+
+<p>本文我将给大家展示一个开发模式，一年前我就已经把它应用到了我所有的项目中(包括公司的和私人的)，结果证明非常成功。很早我就想写篇文章介绍一下它，但直到现在才抽出空来。本文主要介绍分支创建策略(<code>branching strategy</code>)和发版管理(<code>release management</code>)，不涉及相关项目的任何细节。</p>
+
+<!-- ![git-flow](/images/blog/20141104_git-model@2x.png) -->
+<!--
+<img src="http://matrixzk.github.io/images/blog/20141104_git-model@2x.png" alt="git-flow" height='70%' width='70%' style="text-align:center"/>
+<!-->
+
+<p><img class="center" src="http://matrixzk.github.io/images/blog/20141104_git-model@2x.png" width="450" height="450" title="git-model" /></p>
+
+<p>这里以<a href="http://git-scm.com/">Git</a>作为源代码的版本控制工具。</p>
+
+<h2 id="git-why-git">为什么选Git (Why Git?)</h2>
+
+<p>关于<code>Git</code>和<code>集中式源代码控制系统</code>之间优劣的深入探讨，可以看<strong><a href="http://www.whygitisbetterthanx.com/">这里</a></strong>和<strong><a href="https://git.wiki.kernel.org/index.php/GitSvnComparsion">这里</a></strong>。那里充满了浓重的火药味。作为一个开发者，我认为Git是现有的同类工具中最好的，没有之一。Git很大得改变了开发者对于合并(<code>merging</code>)文件和创建分支(<code>branching</code>)的思考方式。在我所经历过的经典的<code>CVS/Subversion</code>(集中式版本控制系统)时代，<code>merging/branching</code>(开分支与合并分支)常常让人提心吊胆(“小心合并冲突，否则会很蛋疼！”)但有时又不得不做。</p>
+
+<p>但是使用Git，这些操作就非常得轻量且简单了，并且被视为<strong>日常</strong>工作流程的核心部分之一，真的是这样。例如，在介绍<code>CVS/Subversion</code>的<strong><a href="http://svnbook.red-bean.com/">书</a></strong>中，第一次提及<code>branching</code>(分支)和<code>merging</code>(合并)通常是在比较靠后的章节(针对高级读者)，然而几乎对于每本介绍Git的<strong><a href="http://git-scm.com/book/en/v2">书</a></strong>，这些内容往往在前三章(即基础部分)就被涵盖了。</p>
+
+<p>正是由于Git的简单易用，创建分支与合并分支变得不那么令人恐怖了。版本控制工具更多得被认为了是对<code>branching/merging</code>(创建分支与合并分支)的一种辅助而非别的。</p>
+
+<p>介绍了这些工具之后，下面我们来开始讲这个开发模式。我将要在这里为大家展示的这个模式，本质上说只是一套流程，团队的每个成员都应该遵守这套流程以确保完成一个可控的软件开发过程。</p>
+
+<h2 id="decentralized-but-centralized">分散而集中 (Decentralized but centralized)</h2>
+
+<p>在我们为配合这个分支管理模型很好的工作而做的仓库配置中，有一个名义上的中央仓库(<code>central repo</code>)。注意，这个仓库仅仅是被视为中央仓库，由于Git是一个<code>DVCS</code>(分布式版本控制<code>Distributive Version Control System</code>)，因此在技术层面上没有中央仓库这一概念。我们姑且把这个仓库(repo)称为<code>origin</code>，因为所有的Git用户都很熟悉这一称谓。</p>
+
+<!-- ![centr-decentr](/images/blog/20141104_centr-decentr@2x.png) -->
+<!--
+<img src="http://matrixzk.github.io/images/blog/20141104_centr-decentr@2x.png" alt="git-flow" height='70%' width='70%' style="text-align:center"/>
+<!-->
+
+<p><img class="center" src="http://matrixzk.github.io/images/blog/20141104_centr-decentr@2x.png" width="500" height="500" title="centr-decentr" /></p>
+
+<p>每个开发者都对<code>origin</code>执行<code>pull</code>(拉取代码)和<code>push</code>(推送代码)操作。但是在这种中央式的<code>push-pull</code>关系背后，每个开发者可能还会从其他同事那里<code>pull</code>一些修改(changes)而组成子团队。比如说，当有两个及以上开发者要合作完成一个较大的新功能，并且尚未将该新功能全部完成并推往<code>origin</code>仓库时，适用于这一场景。在上图中，就有Alice和Bob，Alice和David，以及Clair和David这样三个子团队。</p>
+
+<p>从技术角度来讲，这里对于Alice来说所做的仅仅是定义(<code>defined</code>)了一个远程库(<code>remote</code>)，命名为<code>bob</code>，并将它指向Bob的仓库，反之亦然。</p>
+
+<h2 id="the-main-branches">主要分支 (The main branches)</h2>
+
+<p>本文所介绍的开发模式的核心部分很大得受到了现有模型的启发。在中央仓库中有两个生命期无限长的主要分支：</p>
+
+<ul>
+  <li><strong>Master</strong></li>
+  <li><strong>Developer</strong></li>
+</ul>
+
+<p><code>origin</code>的<code>master</code>分支已被所有的Git用户所熟知。平行于<code>master</code>分支存在着另一个被称为<code>develop</code>的分支。</p>
+
+<p>我们默认主要分支<code>origin/master</code>的<code>HEAD</code>所指向的源码总是处于<strong>可发布</strong>(<code>production-ready</code>)的状态。</p>
+
+<p>我们默认主要分支<code>origin/develop</code>的<code>HEAD</code>所指向的源码总是处于为下次发版所做的最近的一次修改提交的状态。也有人把它称作”集成分支(<code>integration branch</code>)”，每晚(<code>nightly</code>)所做的自动编译(<code>automatic builds</code>)通常来自该分支。也就是说这是一个日常开发所在的分支(译者注)。</p>
+
+<p>当<code>develop</code>分支上的代码达到了一个稳定的点并且准备进行发版时，在该分支上所做的所有修改都应该被合并(<code>merged</code>)回<code>master</code>分支，并且打一个带有发布版本号的标签(<code>tag</code>)。具体做法等下会进行详细讲解。</p>
+
+<p>因此，每次把修改合并回<code>master</code>分支时，这都将<strong>被定义为</strong>一次新的产品发版。在这点上我们往往是非常严格的，由此在理论上，我们可以写一个Git钩子脚本(<code>hook script</code>)，在每有一个针对<code>master</code>分支的<code>commit</code>(提交)时都进行自动编译并且生成一个可发布的软件产品。</p>
+
+<h2 id="supporting-branches">辅助分支 (Supporting branches)</h2>
+
+<p><img class="right" src="http://matrixzk.github.io/images/blog/20141104_main-branches@2x.png" width="260" title="main-branches" /></p>
+
+<p>伴随着主要分支<code>master</code>和<code>develop</code>，我们的开发模式还用了一些辅助分支来协助团队成员间的平行开发，使对功能的追踪变得轻便(<code>ease tracking of features</code>)，并且协助产品的发布，以及进行线上版本bug的快速修复。</p>
+
+<p>我们所用到这些的不同类型的辅助分支包括：</p>
+
+<ul>
+  <li>Feature branches (功能分支)</li>
+  <li>Release branches (预发布分支)</li>
+  <li>Hotfix branches  (热修复分支) </li>
+</ul>
+
+<p>上述每种分支都有特定的用途，并且对于他们各自的起始分支和将要合并到的目标分支都有严格的规则限制。等下我们会详述。</p>
+
+<p>从技术角度来讲，这些分支并没有本质区别，我们是根据使用场景去给它们归类的。它们本质上只是普通的Git分支而已。</p>
+
+<h3 id="feature-branches">功能分支 (Feature branches)</h3>
+
+<p><img class="right" src="http://matrixzk.github.io/images/blog/20141104_fb@2x.png" width="150" title="feature-branch" /></p>
+
+<p>分支创建自：<code>develop</code>；必须合并回：<code>develop</code>；</p>
+
+<p>分支命名约定：除<code>master</code>, <code>develop</code>, <code>release-*</code>, 或<code>hotfix-*</code>以外的任何名字。</p>
+
+<p>功能分支(有时亦称主题分支(<code>topic branch</code>))是用来给一个可预见的未来即将要发布的版本开发新功能的。当开始一个新功能的开发时，我们可能并不知道该新功能将被合并入哪个发布版本。事实上一个功能分支将伴随该功能的开发过程一直存在，并最终被合并回<code>develop</code>分支(已确定将要把该新功能加入到即将发布的新版本中)或者丢弃掉(假如是一个失败的尝试)。</p>
+
+<p>功能分支通常只存在于开发者的本地仓库中，并不包含在远程库<code>origin</code>中。</p>
+
+<h4 id="section">创建功能分支</h4>
+
+<p>当要开发一个新功能时，从<code>develop</code>分支中切出(<code>branch off</code>)一个新分支：</p>
+
+<pre><code>$ git checkout -b myfeature develop
+Switched to a new branch "myfeature"
+</code></pre>
+
+<h4 id="develop">将已完成的新功能合并到<code>develop</code>分支</h4>
+
+<p>如果确定要把已完成的新功能加入到即将发布的新版中，将它合并到<code>develop</code>分支：</p>
+
+<pre><code>$ git checkout develop
+Switched to branch 'develop'
+
+$ git merge --no-ff myfeature
+Updating ea1b82a..05e9557
+(Summary of changes)
+
+$ git branch -d myfeature
+Deleted branch myfeature (was 05e9557).
+
+$ git push origin develop
+</code></pre>
+
+<p>上边的<code>--no-ff</code>标记的作用是使当前的合并操作总是创建一个新的<code>commit</code>对象，即使该合并被执行为快进式(<code>fast-forward</code>)合并。这样可以避免丢失掉该功能分支的历史存在信息，并且将针对该功能的所有提交都集中到一起。来对比一下：</p>
+
+<p><img class="center" src="http://matrixzk.github.io/images/blog/20141104_merge-without-ff@2x.png" width="400" title="merge-without-ff" /></p>
+
+<p>对于后者的情形，想要从Git的历史信息中识别出哪些<code>commit</code>对象是针对该新功能所做的，简直不可能，除非去阅读所有的<code>log</code>信息。而且如果你想要回退到做整个新功能(比如一组提交)之前的状态，对于后者来说简直是件非常让人头疼的事，但是如果使用了<code>--no-ff</code>标记这将很容易实现。</p>
+
+<p>是的，这将创建一些多余的(空的)提交(<code>commit</code>)对象，但是收益远远大于开销。</p>
+
+<p>不幸的是，目前为止我还没有找到一个可以将<code>--no-ff</code>作为<code>git merge</code>默认行为的方法，但它确实应该是。</p>
+
+<h3 id="release-branches">预发布分支 (Release branches)</h3>
+
+<p>分支创建自：<code>develop</code>；必须合并回：<code>develop</code>和<code>master</code>；分支命名约定：<code>release-*</code>。</p>
+
+<p>预发布分支主要用来协助一个新版本发布的准备工作。它允许对预发布版本做最后的打点。此外，它也允许做一些较小的bug修复并且准备一些发版的元数据(版本号和编译数据等)。在预发布分支做上述这些工作的同时，<code>develop</code>分支已经可以开始放心得为下一次发版进行新功能的开发了。</p>
+
+<p>从<code>develop</code>分支切出预发布分支的关键时机是当前的开发工作已经(几乎)达到了可以发版的预期状态。所有针对该次发版所做的功能开发都要在这个时间点及时地全部合并到<code>develop</code>分支。为以后的发版所做的功能都必须等到该预发布分支创建出来(<code>branched off</code>)之后才能合并到<code>develop</code>分支上来。</p>
+
+<p>必须准确得在一个新创建的预发布分支的起始处为即将到来的发版分配版本号，不能提前。因为在那之前，虽然在<code>develop</code>分支上所做的修改都是针对该“<strong>下次发版</strong>”，但是还并没决定该“<strong>下次发版</strong>”的版本号究竟是要定为<code>0.3</code>还是<code>1.0</code>，直到预发布分支创建出来时才能确定。这个决定是在预发布分支的起始处做的，并且遵从项目关于版本号变更的规则。</p>
+
+<h4 id="section-1">创建预发布分支</h4>
+
+<p>预发布分支创建自<code>develop</code>分支。比如说，当前的线上版本是<code>1.1.5</code>，我们即将有一个大的发版。<code>develop</code>分支当前已经达到了该“<strong>下次发版</strong>”的预期状态，并且我们已经决定了该次发版的版本号将定为<code>1.2</code>(而不是<code>1.1.6</code>或者<code>2.0</code>)。藉此我们切出一个预发布分支，并给它一个可反映出新版本号的名字：</p>
+
+<pre><code>$ git checkout -b release-1.2 develop
+Switched to a new branch "release-1.2"
+
+$ ./bump-version.sh 1.2
+Files modified successfully, version bumped to 1.2.
+
+$ git commit -a -m "Bumped version number to 1.2"
+[release-1.2 74d9424] Bumped version number to 1.2
+1 files changed, 1 insertions(+), 1 deletions(-)
+</code></pre>
+
+<p>创建并切换到新建的分支后，我们先修改版本号。这里的<code>bump-version.sh</code>是一个虚构的shell脚本，我们用它来修改当前工作副本(<code>working copy</code>)中的相关文件以反映出新的版本号(当然你也可以手动修改)。然后，提交修改后的版本号。</p>
+
+<p>这个新建的预发布分支会保留一段时间，直到确定已完成本次版本发布。在这段时间，一些bug的修复工作应该在该分支上来做(而不是在<code>develop</code>分支上)。但是决不能在该分支上增加较大的新功能。如果此时要新增较大的新功能，决不能添加到该分支，而应该将它们合并到<code>develop</code>分支以等待下次大的发版。</p>
+
+<h4 id="section-2">结束预发布分支</h4>
+
+<p>当预发布分支已经达到可发布状态时，我们需要进行以下操作。<strong>首先</strong>，把该预发布分支合并到<code>master</code>分支(因为每个针对<code>master</code>分支的<code>commit</code>都是一次已确定的新的发版，切记)。<strong>然后</strong>，必须给针对<code>master</code>分支的该<code>commit</code>打一个标签(<code>tag</code>)，以方便以后参考该历史版本。<strong>最后</strong>，在该预发布分支上所做的修改要合并回<code>develop</code>分支，这样以后的版本就也包含了在该预发布分支上所做的bug修复。</p>
+
+<p>上述前两步操作如下：</p>
+
+<pre><code>$ git checkout master
+Switched to branch 'master'
+
+$ git merge --no-ff release-1.2
+Merge made by recursive.
+(Summary of changes)
+
+$ git tag -a 1.2
+</code></pre>
+
+<p>发版结束，并且打上标签供以后参考。另外，如果需要的话可以使用<code>-s</code>或者<code>-u</code>参数为你所打的标签进行加密处理。</p>
+
+<p>为保存对该预发布分支所做的修改，我们需要将它合并回<code>develop</code>分支：</p>
+
+<pre><code>$ git checkout develop
+Switched to branch 'develop'
+
+$ git merge --no-ff release-1.2
+Merge made by recursive.
+(Summary of changes)
+</code></pre>
+
+<p>这步操作可能会导致合并冲突(<code>merge conflict</code>)(只是可能，因为我们修改了版本号)。如果真的出现了合并冲突，解决它并再次提交。</p>
+
+<p>OK，至此操作结束，可以删掉该预发布分支了，因为我们已经不再需要它：</p>
+
+<pre><code>$ git branch -d release-1.2
+Deleted branch release-1.2 (was ff452fe).
+</code></pre>
+
+<h3 id="hotfix-branches">热修复分支 (Hotfix branches)</h3>
+
+<p><img class="right" src="http://matrixzk.github.io/images/blog/20141104_hotfix-branches@2x.png" width="250" title="hotfix-branches" /></p>
+
+<p>分支创建自：<code>master</code>；必须合并回：<code>develop</code>和<code>master</code>；分支命名约定：<code>hotfix-*</code>。</p>
+
+<p>热修复分支也是用来协助新版本发布的，在这点上和预发布分支相似，但该分支不是必须存在的。该分支的创建主要是用来及时应对线上版本所出现的意外情况。当线上版本出现一个需要立刻修复的严重bug时，我们可以从<code>master</code>分支上标记为当前线上版本号的<code>tag</code>处切出一个热修复分支。</p>
+
+<p>这样做的好处是，在抽出一两个人来应对线上版本紧急bug修复的同时，团队其他成员依然可以继续在<code>develop</code>分支上进行日常开发工作。</p>
+
+<h4 id="section-3">创建热修复分支</h4>
+
+<p>热修复分支创建自<code>master</code>分支。比如，当前线上产品版本号是<code>1.2</code>，突然出现了一个急需修复的严重bug。但此时在<code>develop</code>分支上的开发还没有达到一个可发布状态。这时我们就需要切出一个热修复分支来修复该bug：</p>
+
+<pre><code>$ git checkout -b hotfix-1.2.1 master
+Switched to a new branch "hotfix-1.2.1"
+
+$ ./bump-version.sh 1.2.1
+Files modified successfully, version bumped to 1.2.1.
+
+$ git commit -a -m "Bumped version number to 1.2.1"
+[hotfix-1.2.1 41e61bb] Bumped version number to 1.2.1
+1 files changed, 1 insertions(+), 1 deletions(-)
+</code></pre>
+
+<p>切出分支后不要忘了先修改版本号！</p>
+
+<p>然后，修复bug，并将修复工作进行一或多次单独提交。</p>
+
+<pre><code>$ git commit -m "Fixed severe production problem"
+[hotfix-1.2.1 abbe5d6] Fixed severe production problem
+5 files changed, 32 insertions(+), 17 deletions(-)
+</code></pre>
+
+<h4 id="section-4">结束热修复分支</h4>
+
+<p>当完成了紧急bug的修复时，要将该热修复分支合并回<code>master</code>分支，<strong>并且同时也要将其合并回<code>develop</code>分支</strong>，以确保对该bug的修复也同时包含在下一次发版中。这里的操作和结束预发布分支完全类似。</p>
+
+<p>首先，将bug修复工作合并回<code>master</code>分支，并且打上一个标示发版号的标签：</p>
+
+<pre><code>$ git checkout master
+Switched to branch 'master'
+
+$ git merge --no-ff hotfix-1.2.1
+Merge made by recursive.
+(Summary of changes)
+
+$ git tag -a 1.2.1
+</code></pre>
+
+<p>如果需要的话可以使用<code>-s</code>或者<code>-u</code>参数为你所打的标签进行加密处理。</p>
+
+<p>然后，必须将bug修复工作也合并回<code>develop</code>分支：</p>
+
+<pre><code>$ git checkout develop
+Switched to branch 'develop'
+
+$ git merge --no-ff hotfix-1.2.1
+Merge made by recursive.
+(Summary of changes)
+</code></pre>
+
+<p>对于这里的规则有一个例外，即<strong>如果此时同时存在一个预发布分支，那么要把该热修复分支合并回该预发布分支，而不是<code>develop</code>分支</strong>。因为当该预发布分支完成之后是要合并回<code>develop</code>分支的，所以从热修复分支合并到预发布分支上的bug修复工作，最终也同样会被合并回<code>develop</code>分支。(如果在<code>develop</code>分支上的开发工作已经等不及该预发布分支的完成就迫切的需要对该bug的修复，此时你同样可以放心得将已经在热修复分支上做的bug修复工作合并到<code>develop</code>分支上去)。</p>
+
+<p>最后，删除该临时分支：</p>
+
+<pre><code>$ git branch -d hotfix-1.2.1
+Deleted branch hotfix-1.2.1 (was abbe5d6).
+</code></pre>
+
+<h2 id="section-5">总结</h2>
+
+<p>虽然在我所介绍的这个分支管理模型中没有涉及到什么特别新的东西，但事实证明文章开头所展示给大家的模型图确实对我们的项目帮助极大。它形成了一种优雅的思维模式，非常容易理解，并且可让团队成员达成一个对创建分支和发版流程的共同理解。</p>
+
+<p>在<strong><a href="http://nvie.com/files/Git-branching-model.pdf">这里</a></strong>提供了一个高质量的PDF格式的分支管理模型图。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Octopress 主题修改小记]]></title>
+    <link href="http://matrixzk.github.io/blog/20141103/octopress-custom-config/"/>
+    <updated>2014-11-03T13:30:57+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20141103/octopress-custom-config</id>
+    <content type="html"><![CDATA[<p>博客搭建起来后，总感觉默认的 classic 主题有些呆板，而且字体太大，阅读体验不是很好。于是就尝试着更改下主题。把 Octopress 的<strong><a href="https://github.com/imathis/octopress/wiki/3rd-Party-Octopress-Themes">推荐主题</a></strong>浏览了一遍后发现<a href="https://github.com/shashankmehta/greyshade"> Greyshade </a>的效果还不错。但是安装后发现该主题有些细节还是不尽如人意，比如字体大小、行高、代码高亮背景，等等。经过一番调试后总算基本满意了，但是用移动设备打开后，顿时碎了。它的样式对移动设备真是差劲，比如代码高亮字体大小不一、左右滑动后右边有一条不窄的黑边并且消不去、左侧边栏在 iPad 上不能很好的适应，等等等等。相比之下 Octopress 的默认主题对移动设备的支持就要好太多，几乎完美，而且由于样式不花哨，很好的突出了内容主体。也许这就是这个主题的设计初衷吧，以内容为主体，淡化样式。对于博客来说，阅读体验才是重中之重，而且在这个移动互联网的时代，对移动设备的支持也必须到位。出于以上考虑，我又换回了默认的 classic 主题，但决定对其进行个性化改造。
+<!-- more --></p>
+
+<ul id="markdown-toc">
+  <li><a href="#section">基本方法</a></li>
+  <li><a href="#section-1">修改网页模板</a></li>
+  <li><a href="#section-2">修改网页样式</a></li>
+  <li><a href="#section-3">参考链接</a></li>
+</ul>
+
+<h2 id="section">基本方法</h2>
+
+<p>主要使用到 Chrome 的<code>审核元素</code>工具，通过它定位到想要修改的地方，然后根据相应的<code>css</code>标记或关键字(比如title什么的)，在命令行中通过<code>grep "your_keyword" ./ -R</code>在<code>source</code>或<code>sass</code>目录下定位到相应的文件，然后对其进行修改。这里的修改分为对网页模板的修改和对样式的修改，之后会提到。</p>
+
+<p>另外说一个关于主题切换的小技巧。比如你通过修改源文件，或者通过修改第三方的主题，配置出了一套新的主题，但感觉不是很满意。此时如果通过<code>rake install</code>再去安装别的主题，就会把之前的主题给覆盖掉(关于该命令详细做了什么，参考根目录下的<code>Rakefile</code>文件)。你可能想把两套主题都保留着，毕竟是用心配置出来的嘛。这时你可以将每套主题的<code>source</code>或<code>sass</code>目录做个备份，想要切换到哪个主题时，就把为该主题所备份的上述两个目录拷贝到根目录下，然后执行如下两个操作：</p>
+
+<pre><code>rake clean          # 清除缓存
+rake generate       # 重新生成网站
+</code></pre>
+
+<p>这时用<code>rake preview</code>看下效果。可能需要多刷新几次才能看到新的效果，原因还是缓存，be patient~</p>
+
+<p>忍不住想说一下我遇到的一个坑。在 Octopress 源码中，注释代码应该这样：</p>
+
+<pre><code>&lt;!--
+我被注释掉了 :]
+&lt;!--&gt;
+</code></pre>
+
+<p>而不是这样：</p>
+
+<pre><code>&lt;!--
+我被注释掉了 :]
+--&gt;
+</code></pre>
+
+<p>对当时的我来说，这真是个坑啊。不要告诉我你没发现区别 :]</p>
+
+<h2 id="section-1">修改网页模板</h2>
+
+<p>这里主要包括对网页的头标签、顶部、导航栏、底部和侧边栏的修改。相关目录如下：</p>
+
+<pre><code>octopress/
+|__ source/
+	|__ _includes/  	# 主要用到的子模板
+		|__ custom/     # 对 head, header, navigation, footer 和 sidebar 的自定义模板
+		|__ asides/     # 侧边栏的子模板
+		|__ post/       # 所发布文章的时间、作者等元信息，以及分享评论等子模板
+</code></pre>
+
+<p>比如，想要修改网页的 &lt;head&gt; 标签下的信息，对<code>/source/_includes/custom/head.html</code>进行相应修改即可。想要修改网页顶部(导航栏上边)的内容，修改<code>/source/_includes/custom/header.html</code>即可。如果想在导航栏中添加新的标签，修改<code>/source/_includes/custom/navigation.html</code>文件即可。</p>
+
+<p>可参考官方文档<a href="http://octopress.org/docs/theme/template/"> Theming &amp; Customization </a>。</p>
+
+<h2 id="section-2">修改网页样式</h2>
+
+<p>这里主要对网页的字体、字号、颜色、背景图、行间距和边框间距等样式进行修改。相关目录如下：</p>
+
+<pre><code>octopress/
+|__ sass/
+	|__ base/
+	|	|__ _theme.scss      # 用到的所有 color 都定义在这里
+	|	|__ _layout.scss     # 响应式布局在这里定义
+	|	|__ _solarized.scss  # 主要定义文章的排版，包括字体、字号、行间距和字体颜色引用等
+	|	
+	|__ custom/              # 修改这里的文件可以轻松得进行样式自定义
+		|__ _colors.scss     # 这里可通过重写 base/_theme.scss 中的颜色变量来改变相应的颜色
+		|__ _styles.scss     # 该文件在最后时刻引入，因此在这里可重写网页外观的所有样式
+		|__ _layout.scss     # 在这里可通过重写 base/_layout.scss 中的变量改变布局
+
+</code></pre>
+
+<p>Octopress用到的所有颜色都通过<code>Sass</code>变量在<code>/sass/base/_theme.scss</code>中定义着。如果要修改某处颜色，最好是在<code>sass/custom/_colors.scss</code>中重写在<code>sass/base/_theme.scss</code>中所定义的相应颜色变量。这里很多 color 是使用<a href="http://sass-lang.com/documentation/Sass/Script/Functions.html">Sass’s color functions</a>获取的。</p>
+
+<p><strong>注意</strong>，以后要修改其他样式时，也最好遵守这样一个原则，尽量在<code>sass/custom/</code>目录下修改相应的文件。因为<code>sass/custom/</code>中的文件是在<code>sass/base</code>中文件之后被读取的，因此<code>sass/custom/</code>目录的内容决定着最终的样式。而且当通过<code>rake update</code>更新 Octopress 框架源码时，<code>sass/custom/</code>目录是不会被覆盖的，也就是你之前所做的自定义样式依然会保留，而<code>sass/base</code>目录下的文件会全部被更新后的 Octopress 框架源码给覆盖掉。</p>
+
+<p>可参考官方文档<a href="http://octopress.org/docs/theme/styles/">Styles</a>。</p>
+
+<h2 id="section-3">参考链接</h2>
+
+<p>基于上述方法基本就可以对你的博客外观进行随心所欲的修改了，如果再懂点儿css和sass知识就会更得心应手，关于 css 和 sass 参考<a href="http://blog.visioncan.com/2011/sass-scss-your-css/"><strong>这里</strong></a>。</p>
+
+<p>除了非常棒的 Octopress <a href="http://octopress.org/docs/"><strong>官方文档</strong></a>，另外提供几个参考链接：</p>
+
+<ul>
+  <li><a href="http://www.rubydoc.info/gems/octopress-date-format/2.0.1/frames">Octopress Date Format</a></li>
+  <li><a href="http://shengmingzhiqing.com/blog/octopress-tutorials-toc.html/">Octopress 教程目录</a></li>
+  <li><a href="http://812lcl.com/blog/2013/10/27/octopresszhu-ti-yang-shi-xiu-gai/">Octopress 主题样式修改</a></li>
+  <li><a href="http://shanewfx.github.io/blog/2012/08/13/improve-blog-theme/">Octopress 主题改造</a></li>
+</ul>
+
+<!--
+## 主题修改
+
+下面简要说下我所做的修改。
+
+### 修改字体大小
+
+### 修改通过四个空格缩进时高亮的文字颜色
+
+### 修改日期样式
+
+### 更改网页背景图片
+
+### 改造导航栏
+
+### 增大header高度
+
+### 去掉超链接下划线
+
+### 增加文章目录
+
+### 增加分类侧边栏
+
+### 增加回到顶部按钮
+
+### 增加多说评论
+
+### 缩小正文现实区域的高度
+
+### 加快博客访问速度
+<!-->
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[iOS8 Day-by-Day :: Day1 :: Swift概述]]></title>
+    <link href="http://matrixzk.github.io/blog/20141028/ios8-day1-swift-overview/"/>
+    <updated>2014-10-28T20:38:03+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20141028/ios8-day1-swift-overview</id>
+    <content type="html"><![CDATA[<p>本文译自 : <a href="http://www.shinobicontrols.com/blog/posts/2014/07/17/ios8-day-by-day-day-1-blaggers-guide-to-swift">iOS8 Day-by-Day :: Day 1 :: Blagger’s Guide to Swift</a></p>
+
+<ul id="markdown-toc">
+  <li><a href="#section">简介</a></li>
+  <li><a href="#initialisation">初始化(Initialisation)</a></li>
+  <li><a href="#mutability">可变性(Mutability)</a></li>
+  <li><a href="#strong-typinganyobject">强类型(<code>Strong Typing</code>)和<code>AnyObject</code></a></li>
+  <li><a href="#protocol-conformance">协议的一致性(Protocol Conformance)</a></li>
+  <li><a href="#enums">枚举(Enums)</a></li>
+  <li><a href="#section-1">总结</a></li>
+</ul>
+
+<h2 id="section">简介</h2>
+
+<p>今年的WWDC令人印象深刻，除了宣布<code>iOS8</code>，苹果还向我们介绍了一门新的编程语言–<code>Swift</code>。<code>Swift</code>和<code>objective-C</code>有很大的区别，它是强类型(<code>Strongly-typed</code>)的，并且包含有很多现代编程语言的特性。</p>
+
+<p>出于对新兴事物强大的热情和兴趣，这个博客系列将全程使用Swift。现在市面上已经有了很丰富的资源向我们介绍如何使用Swift，以及它是如何与Cocoa框架交互的。事实上，通过阅读如下官方文档开始你的Swift之旅是一个非常明智的选择:</p>
+
+<!-- more -->
+
+<ul>
+  <li><a href="https://itunes.apple.com/us/book/the-swift-programming-language/id881256329?mt=11&amp;ls=1">The Swift Programming Language</a></li>
+  <li><a href="https://itunes.apple.com/us/book/using-swift-cocoa-objective/id888894773?mt=11&amp;ls=1">Using Swift with Cocoa and Objective-C</a></li>
+</ul>
+
+<p>你同时应该关注官方的<a href="https://developer.apple.com/swift/blog/">Swift Blog</a>，以及Apple提供的一些其他的官方<a href="https://developer.apple.com/swift/resources/">资源</a>。</p>
+
+<p>由于已经有了很多很好的资源向我们介绍如何使用<code>Swift</code>，因此接下来我们不会涉及过多的基础内容，但我们会着重向你介绍在初次使用Swift的过程中可能会遇到的一些重要的陷阱和潜在的痛点，特别是与系统的框架相关的。</p>
+
+<p>我会在一个<code>Xcode 6 playground</code>里向你展示以下所介绍的示例代码，你可以通过<code>ShinobiControls</code>的Github<a href="https://github.com/ShinobiControls/iOS8-day-by-day">得到它</a>。</p>
+
+<p>如果对本文有任何疑问，或者建议添加一些其他相关内容，你可以通过在下边添加评论或通过<a href="https://twitter.com/iwantmyrealname">@iwantmyrealname</a>在<code>twitter</code>上告诉我，我会在本系列文章中对其持续跟进。</p>
+
+<h2 id="initialisation">初始化(Initialisation)</h2>
+
+<p>Swift正式引入了与对象初始化相关的概念，包括<code>designated initialiser</code>(指定初始化方法)和<code>convenience initialiser</code>(便利初始化方法)，以及在对一个对象初始化的过程中以指定的顺序调用一系列初始化方法。近期我将会通过本系列文章中的一篇来详细介绍Swift的初始化是如何工作的，以及这将会对你所写的objective-C部分的代码造成哪些影响，敬请关注。</p>
+
+<p>Swift和objective-C在初始化方面的另一个重要区别是返回值和初始化失败的情况。在objective-C中的初始化方法大概像这样：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="objective-c"><span class="line"><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">init</span> <span class="p">{</span>
+</span><span class="line">    <span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="n">init</span><span class="p">];</span>
+</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">        <span class="c1">// Do some stuff</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>在Swift中是这样：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">init</span> <span class="p">{</span>
+</span><span class="line">    <span class="n">variableA</span> <span class="o">=</span> <span class="mi">10</span>
+</span><span class="line">    <span class="p">...</span>
+</span><span class="line">    <span class="nb">super</span><span class="p">.</span><span class="k">init</span><span class="p">()</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>注意，objective-C的初始化方法负责创建(Create)并且返回<code>self</code>，但在Swift对应的场景中却不存在<code>return</code>语句。这就意味着，在Swift中你无法像objC那样在初始化失败时返回一个<code>nil</code>对象。</p>
+
+<p>或许Swift在不久后正式发布时会解决掉这个问题，但现在唯一可以绕过这个问题的解决方案是使用一个返回可选类型(<code>optional type</code>)的类方法(<code>class method</code>)：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">class</span> <span class="n">MyClass</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">class</span> <span class="k">func</span> <span class="n">myFactoryMethod</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MyClass</span><span class="o">?</span> <span class="p">{</span>
+</span><span class="line">        <span class="p">...</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>有趣的是，objective-C<code>APIs</code>中的工厂方法(<code>factory method</code>)在Swift中被转换成了初始化方法(<code>initialiser</code>)，因此上述解决方案并不完美。但是在Swift语言解决这个问题之前，这是处理初始化失败的情况的唯一选择。</p>
+
+<h2 id="mutability">可变性(Mutability)</h2>
+
+<p>对于Cocoa开发者来说，(不)可变性(<code>(im)mutability</code>)并不是一个新的概念。我们已经能够在适当的场景使用<code>NSArray</code>或其对应的可变类型<code>NSMutableArray</code>，而且我们也知道应该尽可能得优先选用相应的不可变(<code>immutable</code>)类型。但Swift把这一概念提升到了一个新的高度，而且把不可变性(<code>immutability</code>)作为一个基本概念融入到了这门语言的血液。</p>
+
+<p>Swift中用关键字<code>let</code>来定义一个不可变变量(<code>immutable variable</code>)，即你不能改变其所代表的内容。
+举个栗子：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">let</span> <span class="n">a</span> <span class="o">=</span> <span class="n">MyClass</span><span class="p">()</span>
+</span><span class="line"><span class="n">a</span> <span class="o">=</span> <span class="n">MySecondClass</span><span class="p">()</span> <span class="c1">// 不允许</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这就意味着你不能对一个由关键字<code>let</code>定义的变量重新赋值(<code>redefine</code>)。取决于对象的类型，对象自身也可能是不可变的(<code>immutable</code>)。如果是值类型(<code>value type</code>)，比如<code>struct</code>，它也将是不可变的。如果是引用类型(<code>reference type</code>)，比如<code>class</code>，那么它将是可变的。(译者注：这里所说的对象自身是指对象内部的属性)</p>
+
+<p>为了说明这一点，我们来看如下结构体(<code>struct</code>)：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">struct</span> <span class="n">MyStruct</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">let</span> <span class="n">t</span> <span class="o">=</span> <span class="mi">12</span>
+</span><span class="line">    <span class="k">var</span> <span class="nl">u</span><span class="p">:</span> <span class="n">String</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>如果我们用关键字<code>var</code>来定义一个变量<code>struct1</code>，可以看到如下结果：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">var</span> <span class="n">struct1</span> <span class="o">=</span> <span class="n">MyStruct</span><span class="p">(</span><span class="nl">t</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span> <span class="nl">u</span><span class="p">:</span> <span class="s">&quot;Hello&quot;</span><span class="p">)</span>
+</span><span class="line"><span class="n">struct1</span><span class="p">.</span><span class="n">t</span> <span class="o">=</span> <span class="mi">13</span> <span class="c1">// 错误: t 是一个不可变的属性</span>
+</span><span class="line"><span class="n">struct1</span><span class="p">.</span><span class="n">u</span> <span class="o">=</span> <span class="s">&quot;GoodBye&quot;</span>
+</span><span class="line"><span class="n">struct1</span> <span class="o">=</span> <span class="n">MyStruct</span><span class="p">(</span><span class="nl">t</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nl">u</span><span class="p">:</span> <span class="s">&quot;You&quot;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>你可以改变<code>u</code>属性，因为它是由<code>var</code>定义的，你也可以重新给变量<code>struct1</code>赋值(<code>redefine</code>)，同样是因为它是由<code>var</code>定义的。但是属性<code>t</code>是不能被改变的，因为它被定义为<code>let</code>。下面我们来看下用关键字<code>let</code>来定义一个结构体(<code>struct</code>)的实例将会发生什么：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">let</span> <span class="n">struct2</span> <span class="o">=</span> <span class="n">MyStruct</span><span class="p">(</span><span class="nl">t</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span> <span class="nl">u</span><span class="p">:</span> <span class="s">&quot;World&quot;</span><span class="p">)</span>
+</span><span class="line"><span class="n">struct2</span><span class="p">.</span><span class="n">u</span> <span class="o">=</span> <span class="s">&quot;Planet&quot;</span> <span class="c1">// 错误: struct2 是不可变的</span>
+</span><span class="line"><span class="n">struct2</span> <span class="o">=</span> <span class="n">MyStruct</span><span class="p">(</span><span class="nl">t</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nl">u</span><span class="p">:</span> <span class="s">&quot;Defeat&quot;</span><span class="p">)</span> <span class="c1">// 错误: struct2 是不可变的引用</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这里不仅不能改变<code>struct2</code>变量，也不能改变这个结构体的内容(比如其属性<code>u</code>)。这是因为结构体(<code>struct</code>)是<strong>值类型</strong>(<code>value type</code>)。</p>
+
+<p>同样的场景，对于一个类(<code>class</code>)来说就有一些微妙的差别：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">class</span> <span class="n">MyClass</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">let</span> <span class="n">t</span> <span class="o">=</span> <span class="mi">12</span>
+</span><span class="line">    <span class="k">var</span> <span class="nl">u</span><span class="p">:</span> <span class="n">String</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">init</span><span class="p">(</span><span class="nl">t</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span> <span class="nl">u</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">        <span class="nb">self</span><span class="p">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">t</span>
+</span><span class="line">        <span class="nb">self</span><span class="p">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">u</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>根据使用objective-C的经验，将变量定义为<code>var</code>所表现出来的行为或许你并不感到奇怪：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">var</span> <span class="n">class1</span> <span class="o">=</span> <span class="n">MyClass</span><span class="p">(</span><span class="nl">t</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span> <span class="nl">u</span><span class="p">:</span> <span class="s">&quot;Hello&quot;</span><span class="p">)</span>
+</span><span class="line"><span class="n">class1</span><span class="p">.</span><span class="n">t</span> <span class="o">=</span> <span class="mi">13</span> <span class="c1">// 错误: t 是一个不可变的属性</span>
+</span><span class="line"><span class="n">class1</span><span class="p">.</span><span class="n">u</span> <span class="o">=</span> <span class="s">&quot;GoodBye&quot;</span>
+</span><span class="line"><span class="n">class1</span> <span class="o">=</span> <span class="n">MyClass</span><span class="p">(</span><span class="nl">t</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nl">u</span><span class="p">:</span> <span class="s">&quot;You&quot;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>你不仅可以改变引用本身，而且可以改变所有使用<code>var</code>定义的变量，但是却不能改变任何一个使用<code>let</code>定义的变量。接下来用<code>let</code>来定义一个类实例，我们来对比一下他们的表现有何不同：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">let</span> <span class="n">class2</span> <span class="o">=</span> <span class="n">MyClass</span><span class="p">(</span><span class="nl">t</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span> <span class="nl">u</span><span class="p">:</span> <span class="s">&quot;World&quot;</span><span class="p">)</span>
+</span><span class="line"><span class="n">class2</span><span class="p">.</span><span class="n">u</span> <span class="o">=</span> <span class="s">&quot;Planet&quot;</span> <span class="c1">// 正确</span>
+</span><span class="line"><span class="n">class2</span> <span class="o">=</span> <span class="n">MyClass</span><span class="p">(</span><span class="nl">t</span><span class="p">:</span> <span class="mi">11</span><span class="p">,</span> <span class="nl">u</span><span class="p">:</span> <span class="s">&quot;Geoid&quot;</span><span class="p">)</span> <span class="c1">// 错误: class2 是一个不可改变的引用</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这里你不能改变这个引用(<code>reference</code>)自身，但是<strong>可以</strong>改变这个类中的任何一个使用<code>var</code>定义的属性。这是因为类是<strong>引用类型</strong>(<code>reference type</code>)。</p>
+
+<p>上述现象很容易理解，并且在该语言的参考书籍有详尽的解释。但是当我们把目光转向Swift的集合类型(<code>collection types</code>)时，上述概念就容易混淆了。</p>
+
+<p><code>NSArray</code>是引用类型。也就是说当你创建一个<code>NSArray</code>的实例时，你创建了一个对象，并且代表该对象的变量是一个指向该数组在内存中的地址的指针，也因此在objective-C中定义该变量时要在前边标注一个星号。如果你回顾一下之前所学的关于<code>var</code>和<code>let</code>的引用类型和和值类型的语义(<code>semantics</code>)，可能会想象出他们会有怎样的行为表现。事实上，如果你需要一个NSArray的可变的版本，那不得不用另一个类 – <code>NSMutableArray</code>。</p>
+
+<p>Swift的数组并不像这样，它们是值类型而非引用类型。这就意味着它们的行为更像是结构体(<code>struct</code>)而不是类(<code>class</code>)。因此，关键字<code>var</code>或<code>let</code>不仅指定了变量能否被重新定义(<code>redefined</code>)，还决定了所创建的数组是否是可变的。</p>
+
+<p>一个用<code>var</code>定义的数组不仅可以被重新赋值(<code>reassigned</code>)，还可以改变其元素：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">var</span> <span class="n">array1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span>
+</span><span class="line"><span class="n">array1</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="c1">// [1,2,3,4,5]</span>
+</span><span class="line"><span class="n">array1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">27</span>    <span class="c1">// [27,2,3,4,5]</span>
+</span><span class="line"><span class="n">array1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>    <span class="c1">// [3,2]</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>但是对于一个被定义为<code>let</code>的数组，既不能对其重新赋值，也不能改变其元素：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">let</span> <span class="n">array2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+</span><span class="line"><span class="n">array2</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="c1">// 错误: array2 是不可变的</span>
+</span><span class="line"><span class="n">array2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">36</span>   <span class="c1">// 错误: array2 是不可变的</span>
+</span><span class="line"><span class="n">array2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span>   <span class="c1">// 错误: 一个不可变的引用不能被再次赋值</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这是一个非常容易引起混淆的地方。它不仅完全改变了我们对集合的可变性(<code>mutability</code>)的理解，同时也混淆了之前明显不同的两个概念。也许在不久之后的Swift的正式发行版本会改变这种行为，让我们拭目以待。</p>
+
+<p>由此导致的一个必然结果是，由于这里的数组是值类型，因此它们传递的是一个副本(<code>copy</code>)。<code>NSArray</code>实例总是通过引用(<code>reference</code>)传递，因此一个拿到某个<code>NSArray</code>类型指针的方法将指向和之前相同的一块内存空间。如果你给某方法传一个Swift数组，它拿到的将是该数组的一份拷贝。数组中所存放对象的类型决定是深拷贝还是浅拷贝。写代码时要警惕这里！</p>
+
+<h2 id="strong-typinganyobject">强类型(<code>Strong Typing</code>)和<code>AnyObject</code></h2>
+
+<p>强类型(<code>Strong Typing</code>)被视为Swift的一个重大特性，它能顾及到更加安全的代码，因为objective-C中运行时才可能抛出的异常如今在编译阶段就能将其捕获。</p>
+
+<p>非常棒，但是，当Swift和objective-C系统框架一起使用时，你会发现很多<code>AnyObject</code>类型。它在Swift中相当于objective-C中的<code>nil</code>。在很多方面，<code>AnyObject</code>给人的感觉不太像Swift的风格(<code>un-Swift-like</code>)。它允许你调用<strong>任何</strong>它能找到的方法，但这样会导致运行时异常。实际上，它的作用几乎和objective-C中的<code>id</code>一模一样。不同的是如果某些属性或不含参数的方法不存在于某<code>AnyObject</code>，将会返回<code>nil</code>：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">let</span> <span class="nl">myString</span><span class="p">:</span> <span class="n">AnyObject</span> <span class="o">=</span> <span class="s">&quot;hello&quot;</span>
+</span><span class="line"><span class="n">myString</span><span class="p">.</span><span class="n">cornerRadius</span> <span class="c1">// Returns nil</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>为了以一种更加Swift的方式与<code>Cocoa APIs</code>协同工作，你会经常看到如下形式的代码：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">func</span> <span class="n">someFunc</span><span class="p">(</span><span class="nl">parameter</span><span class="p">:</span> <span class="n">AnyObject</span><span class="o">!</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AnyObject</span><span class="o">!</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">if</span> <span class="k">let</span> <span class="n">castedParameter</span> <span class="o">=</span> <span class="n">parameter</span> <span class="kt">as</span><span class="o">?</span> <span class="bp">NSString</span> <span class="p">{</span>
+</span><span class="line">        <span class="c1">// Now I know I have a string :)</span>
+</span><span class="line">        <span class="p">...</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>如果你清楚的知道将要接收的是一个String类型的参数，就不必那么小心翼翼地对这个传参进行安全的类型转换了：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">let</span> <span class="n">castedParameter</span> <span class="o">=</span> <span class="n">parameter</span> <span class="kt">as</span> <span class="bp">NSString</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>其实对一个数组类型的传参进行安全的类型转换很简单。由于<code>NSArray</code>不支持泛型(<code>generics</code>)，所以你从Cocoa框架接收来的数组都是<code>[AnyObject]</code>类型的。然而，几乎无一例外的，objective-C中同一个数组中的元素都是相同的类型，而且在当前情形下还都是已知的类型。你可以用如下语法对整个传参过来的数组进行处理：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">func</span> <span class="nf">someArrayFunc</span><span class="p">(</span><span class="nl">parameter</span><span class="p">:</span> <span class="p">[</span><span class="n">AnyObject</span><span class="p">]</span><span class="o">!</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">let</span> <span class="n">newArray</span> <span class="o">=</span> <span class="n">parameter</span> <span class="kt">as</span> <span class="p">[</span><span class="n">String</span><span class="p">]</span>
+</span><span class="line">    <span class="c1">// Do something with your strings :)</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="protocol-conformance">协议的一致性(Protocol Conformance)</h2>
+
+<p>Swift中的<code>protocol</code>(协议)很好理解，以如下方式定义：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">protocol</span> <span class="n">MyProtocol</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">func</span> <span class="n">myProtocolMethod</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Bool</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>我们经常需要检测一个对象是否符合某个特定的协议(protocol)，你可以这样做：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">if</span> <span class="k">let</span> <span class="n">class1AsMyProtocol</span> <span class="o">=</span> <span class="n">class1</span> <span class="kt">as</span><span class="o">?</span> <span class="n">MyProtocol</span> <span class="p">{</span>
+</span><span class="line">    <span class="c1">// We&#39;re in</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>然而这样做有一个错误，因为要想检查一个协议的一致性(<code>conformance</code>)，这个协议必须是一个objective-C的协议，并且在开头用<code>@objc</code>标注：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="p">@</span><span class="n">objc</span> <span class="k">protocol</span> <span class="n">MyNewProtocol</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">func</span> <span class="n">myProtocolMethod</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Bool</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="k">if</span> <span class="k">let</span> <span class="n">class1AsMyNewProtocol</span> <span class="o">=</span> <span class="n">class1</span> <span class="kt">as</span><span class="o">?</span> <span class="n">MyNewProtocol</span> <span class="p">{</span>
+</span><span class="line">    <span class="c1">// We&#39;re in</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这里可能比你想象的要麻烦，因为为了给一个协议标记为<code>@objc</code>，它所有的属性和方法返回值类型都要能够被objective-C识别。这就意味着即使你要加载一些你认为只需要专注于Swift的类，那可能依然需要将其标注为<code>@objc</code>。</p>
+
+<h2 id="enums">枚举(Enums)</h2>
+
+<p>Swift中的枚举(<code>Enums</code>)异常强大。它不仅可以有关联的(<code>associated</code>)值(并且他们可以是不同的类型)，而且还可以定义函数。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">enum</span> <span class="n">MyEnum</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">case</span> <span class="n">FirstType</span>
+</span><span class="line">    <span class="k">case</span> <span class="n">IntType</span> <span class="p">(</span><span class="n">Int</span><span class="p">)</span>
+</span><span class="line">    <span class="k">case</span> <span class="n">StringType</span> <span class="p">(</span><span class="n">String</span><span class="p">)</span>
+</span><span class="line">    <span class="k">case</span> <span class="n">TupleType</span> <span class="p">(</span><span class="n">Int</span><span class="p">,</span> <span class="n">String</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">func</span> <span class="n">prettyFormat</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">String</span> <span class="p">{</span>
+</span><span class="line">        <span class="k">switch</span> <span class="nb">self</span> <span class="p">{</span>
+</span><span class="line">            <span class="k">case</span> <span class="p">.</span><span class="nl">FirstType</span><span class="p">:</span>
+</span><span class="line">                <span class="k">return</span> <span class="s">&quot;No params&quot;</span>
+</span><span class="line">            <span class="k">case</span> <span class="p">.</span><span class="n">IntType</span><span class="p">(</span><span class="k">let</span> <span class="n">value</span><span class="p">)</span><span class="o">:</span>
+</span><span class="line">                <span class="k">return</span> <span class="s">&quot;One param: \(value)&quot;</span>
+</span><span class="line">            <span class="k">case</span> <span class="p">.</span><span class="n">StringType</span><span class="p">(</span><span class="k">let</span> <span class="n">value</span><span class="p">)</span><span class="o">:</span>
+</span><span class="line">                <span class="k">return</span> <span class="s">&quot;One param: \(value)&quot;</span>
+</span><span class="line">            <span class="k">case</span> <span class="p">.</span><span class="n">TupleType</span><span class="p">(</span><span class="k">let</span> <span class="n">v1</span><span class="p">,</span> <span class="k">let</span> <span class="n">v2</span><span class="p">)</span><span class="o">:</span>
+</span><span class="line">                <span class="k">return</span> <span class="s">&quot;Some params: \(v1), \(v2)&quot;</span>
+</span><span class="line">            <span class="k">default</span><span class="o">:</span>
+</span><span class="line">                <span class="k">return</span> <span class="s">&quot;Nothing to see here&quot;</span>
+</span><span class="line">        <span class="p">}</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>这点确实强大。可以像如下这样使用它：</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="swift"><span class="line"><span class="k">var</span> <span class="n">enum1</span> <span class="o">=</span> <span class="n">MyEnum</span><span class="p">.</span><span class="n">FirstType</span>
+</span><span class="line"><span class="n">enum1</span><span class="p">.</span><span class="n">prettyFormat</span><span class="p">()</span> <span class="c1">// &quot;No params&quot;</span>
+</span><span class="line"><span class="n">enum1</span> <span class="o">=</span> <span class="p">.</span><span class="n">TupleType</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="s">&quot;Hello&quot;</span><span class="p">)</span>
+</span><span class="line"><span class="n">enum1</span><span class="p">.</span><span class="n">prettyFormat</span><span class="p">()</span> <span class="c1">// &quot;Some params: 12, Hello&quot;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>我们需要通过一些练习来探索一下怎样才能很好的利用这些强大之处。具体你能用它来做什么这里提供一个参考 — Swift中的可选系统(<code>optionals system</code>)就是以枚举为基础实现的。</p>
+
+<h2 id="section-1">总结</h2>
+
+<p>Swift真的很强大。我们需要一段时间的练习来达到最佳实践，并且通过Swift中某些特性和花样来解决一些在objective-C的限制下所解决不了的问题。本文简要介绍了一些在从objective-C向Swift过渡的过程中通常容易引起混淆的地方，不要被这些吓到。本系列博文的所有相关工程都是用Swift写的，而且在大多数情况下都很容易理解。本文所提及的所有示例代码都包含在我们所提供了一个<code>playground</code>文件中，你可以通过<a href="https://github.com/ShinobiControls/iOS8-day-by-day">github.com/ShinobiControls/iOS8-day-by-day</a>获取它。
+如果你对本文所涉及的内容有任何疑问，或者有添加或修改的建议，请联系我。你可以在下边给我留言，或者twitte我<a href="https://twitter.com/iwantmyrealname">@iwantmyrealname</a>。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[使用 Octopress 2.0 搭建基于 Github Pages 个人博客的详细过程及原理分析]]></title>
+    <link href="http://matrixzk.github.io/blog/20141020/octopress-setup-and-analysis/"/>
+    <updated>2014-10-20T21:55:36+08:00</updated>
+    <id>http://matrixzk.github.io/blog/20141020/octopress-setup-and-analysis</id>
+    <content type="html"><![CDATA[<p>前两天图省事，让一位梦想通过博客改变世界的<strong><a href="http://droidyue.com/">小伙伴</a></strong>帮我搭建了一个基于<a href="https://pages.github.com/"> Github Pages </a>的个人博客，使用的是<a href="http://octopress.org/"> Octopress </a>静态博客引擎。之后博客虽然能跑起来，但面对繁杂的目录结构和分支，我却怎么也理不清其中的原理。之所以说目录结构繁杂，是因为根据 Octopress 的<a href="http://octopress.org/docs/">官方文档</a>描述，我简直在两者之间找不到多少交集(事后证明有些目录和分支确实冗余)。但它却能正常工作(后来发现这很可能是由于 Octopress 升级到 2.0 之后目录结构有所调整)，这激起了我强烈的好奇心，索性就把它全删了，并根据官方文档重新搭建了一次。之后又根据<code>Rakefile</code>文件内容弄清楚了整个搭建过程和每个<code>rake</code>命令的作用。看着Github上清秀的远程仓库目录和知根知底的本地目录结构，顿时心旷神怡，感觉整个世界都敞亮了。所以说，要想搞懂某件事，就把脚伸出去，把鞋子弄湿。说了这么多废话，下面开始进入主题。</p>
+
+<p>PS.以下内容新手可以选择性参考，大神请绕道，谢谢 :]</p>
+
+<!-- more -->
+
+<ul id="markdown-toc">
+  <li><a href="#section">准备工作</a></li>
+  <li><a href="#section-1">搭建过程概述</a>    <ul>
+      <li><a href="#setupoctopress">设置(Setup)Octopress</a></li>
+      <li><a href="#deploy-github-pages">部署(Deploy)到 Github Pages</a></li>
+      <li><a href="#section-2">下面来简单介绍一下怎么新建一篇文章</a></li>
+    </ul>
+  </li>
+  <li><a href="#section-3">搭建过程详解</a>    <ul>
+      <li><a href="#rake-install">rake install</a></li>
+      <li><a href="#rake-setupgithubpages">rake setup_github_pages</a></li>
+      <li><a href="#rake-generate">rake generate</a></li>
+      <li><a href="#rake-preview">rake preview</a></li>
+      <li><a href="#rake-deploy">rake deploy</a></li>
+      <li><a href="#github-pages-source-">生成 Github Pages远程库的 source 分支</a></li>
+      <li><a href="#rake-newposthello-world">rake new_post[“Hello World”]</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="section">准备工作</h2>
+
+<p>首先强调一下，<code>Octopress</code>是一个为 hacker 们准备的博客框架，你应该对<code>shell</code>命令有亲切感，并且对基础的<a href="http://git-scm.com/"> Git </a>知识有所了解，否则 Octopress 可能不适合你。不过没关系，只要你有足够的热情，上述都是次要的。</p>
+
+<p>开始之前，请确保你已安装了<code>Git</code>和<code>Ruby 1.9.3</code>及以上版本。如果 Ruby 版本过低，可以使用<a href="https://github.com/sstephenson/rbenv"> rbenv </a>或<a href="http://rvm.io/"> RVM </a>进行升级。个人推荐使用<code>RVM</code>。</p>
+
+<h2 id="section-1">搭建过程概述</h2>
+
+<p>如果上述的 Git 和 Ruby 环境都准备好了，顺次执行下述各命令就能很快搭建成功。关于部署到<code>Github Pages</code>上时的每个<code>rake</code>命令都做了什么，后边会详述。</p>
+
+<h3 id="setupoctopress">设置(Setup)Octopress</h3>
+
+<p><code>clone</code>下 Github 上的<a href="https://github.com/imathis/octopress"> octopress仓库 </a></p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">git clone git://github.com/imathis/octopress.git octopress
+</span><span class="line">cd octopress</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>然后安装相关依赖</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">gem install bundler
+</span><span class="line">rbenv rehash    # 如果你使用的是rbenv, rehash 一下以确保能运行 bundle 命令
+</span><span class="line">bundle install</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>安装默认Octopress主题</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">rake install</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h3 id="deploy-github-pages">部署(Deploy)到 Github Pages</h3>
+
+<p><a href="https://github.com/repositories/new">新创建</a>一个名字格式形如 <code>username.github.io</code> 的 Github 仓库，这里的<code>username</code>即你的 Github 用户名(或组织名)。</p>
+
+<p>配置<code>Github Pages</code></p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">rake setup_github_pages</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>该命令会要求你输入上边所新建的 Github 仓库的<code>URL</code>。复制粘贴下你新创建仓库的<code>SSH</code>或<code>HTTPS</code> URL 即可(比如SSH的URL <code>git@github.com:username/username.github.io.git</code>)。</p>
+
+<p>然后生成并部署站点</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">rake generate
+</span><span class="line">rake deploy</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>最后不要忘记<code>commit</code>你<code>octopress框架</code>的源码(source)到服务器(关于这个<code>source</code>的具体含义后边详述)</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">git add .
+</span><span class="line">git commit -m 'your message'
+</span><span class="line">git push origin source</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>OK，如果你按照上述命令一条一条来的话，到此博客已经搭建成功。可以在浏览器输入上述<code>username.github.io</code>验证一下。另外你也可以通过<a href="http://octopress.org/docs/deploying/github/#custom_domains">简单的配置</a>使用自己的独立域名(如果有的话)，这里不再赘述。</p>
+
+<h3 id="section-2">下面来简单介绍一下怎么新建一篇文章</h3>
+
+<p>创建一篇名为<code>"Hello World"</code>的文章</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">rake new_post["Hello World"]</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>如果直接<code>rake new_post</code>回车的话，会命令行提示输入博客名。</p>
+
+<p>生成文章</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">rake generate   # 在互联网的公开目录生成文章的网页</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>预览新生成的文章</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">rake preview    # 生成blog预览</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>此时在浏览器中输入<code>http://localhost:4000</code>可预览刚生成的博客，但<code>Github Pages</code>上还看不到。</p>
+
+<p>部署blog</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">rake deploy     # 部署 blog 到 Github Pages</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>OK，一篇名为<code>"Hello World"</code>的博客已经发布到了<code>Github Pages</code>，可以在浏览器输入上述<code>username.github.io</code>验证一下。</p>
+
+<p>到目前为止，关于怎样搭建博客和发布博客已经介绍完毕。看一下你本地的<code>octopress目录</code>和 Github 上的<code>username.github.io</code>仓库目录，如果你对他们的结构有所疑问，或者对上述<code>rake</code>命令究竟做了什么感到好奇，那么接着往下看。</p>
+
+<h2 id="section-3">搭建过程详解</h2>
+
+<p>在你本地的<code>octopress目录</code>下，静躺着一个名为<code>Rakefile</code>的文件，他就是今天的主角。该文件是用<code>Ruby</code>写的，如果你没接触过Ruby但对<code>shell</code>或<code>Python</code>较熟悉的话，基本上可以无障碍阅读该文件。</p>
+
+<p>我们来看下<code>octopress目录</code>的结构，重点注意一下<code>_deploy</code>, <code>public</code>和<code>source</code>这三个子目录。再看一下你刚建的<code>username.github.io</code>仓库，注意下该仓库有两个分支，分别为<code>master</code>分支和<code>source</code>分支。注意了，这里的<code>master</code>分支所对应的本地分支在上述的<code>_deploy目录</code>下，而这里的<code>source</code>分支所对应的是本地分支即在上述的整个<code>octopress目录</code>下。下面我们根据<code>Rakefile</code>文件来分析上述各个<code>rake</code>命令具体都做了什么，然后我们就知道了这个结果是怎么发生的以及为什么要这么做。</p>
+
+<p>这里所有的路径都是相对<code>octopress目录</code>来说的。</p>
+
+<h3 id="rake-install">rake install</h3>
+
+<p>初始化并配置<code>octopress</code>的主题，如果后边没跟主题名参数，则安装默认主题。该命令主要做了如下操作：</p>
+
+<ol>
+  <li>首先根据 octopress 是否已有<code>source</code>目录或<code>sass</code>目录来判断是否已安装了主题，如果已安装，则询问用户是否覆盖已有主题。如果否，则流程终止(<code>abort</code>)。</li>
+  <li>该命令后边是可以再加一个可选的主题名的，否则会使用默认主题<code>Classic</code>。</li>
+  <li>创建<code>source</code>目录，并将<code>"#{themes_dir}/#{theme}/source/."</code>目录下的文件拷贝到<code>source</code>目录。</li>
+  <li>创建<code>sass</code>目录，并将<code>"#{themes_dir}/#{theme}/sass/."</code>目录下的文件拷贝到<code>sass</code>目录。</li>
+  <li>创建<code>source/_posts</code>目录和<code>public</code>目录。</li>
+</ol>
+
+<h3 id="rake-setupgithubpages">rake setup_github_pages</h3>
+
+<p><code>用户</code>或<code>组织</code>的<code>Github Pages</code>使用<code>master</code>分支作为<code>web服务</code>的公开目录，为你URL为<code>http://username.github.io</code>的Pages提供内容文件。因此，你会有这样一个需求，即在<code>source</code>分支上做一些与博客(或说<code>octopress框架</code>)源码相关的工作，而在<code>master</code>分支上<code>commit</code>已经生成的博客内容供web访问。该命令主要就是为我们完成上述任务，具体主要做了下述一系列操作。</p>
+
+<p><strong>NOTE:</strong> 该命令主要用来生成并配置本地<code>octopress/_deploy</code>目录。下文中所提到的<code>Github Pages</code>仓库即下边首先要新建的这个名字形如<code>username.github.io</code>的仓库。</p>
+
+<ol>
+  <li>
+    <p>要求输入你<code>Github Pages</code>仓库的<code>URL</code>。
+该<code>URL</code>即此步之前你在Github上新建的那个命名格式为<code>username.github.io</code>的仓库的URL。之所以以这样的格式命名该仓库，是因为后边要通过该URL提取出该仓库名(即<code>username.github.io</code>)，以用来配置成你的Github Pages的域名，即你博客的域名。该URL有<code>SSH</code>和<code>HTTPS</code>两种格式，都很容易通过字符串截取拿到子串<code>"username.github.io"</code>。( Github 之前使用<code>http://username.github.com</code>作为 Github Pages 的域名，后来将<code>.com</code>改为了<code>.io</code>，该<code>rake</code>脚本中对此做了兼容处理)。</p>
+  </li>
+  <li>
+    <p>将指向<code>imathis/octopress</code>的远程库的名字由<code>origin</code>改为<code>octopress</code>。</p>
+
+    <p><strong>NOTE:</strong> Git在clone一个仓库时会自动将我们从Git服务器上clone下来的仓库命名为origin，并下载其中所有的数据，建立一个指向该仓库的 master 分支的指针，在本地将其命名为 origin/master，但你无法在本地更改其数据。接着，Git 建立一个属于你自己的本地 master 分支，始于 origin 上 master 分支相同的位置，你可以就此开始工作。</p>
+
+    <p>因此，当我们<code>clone</code>了octopress的仓库<code>git://github.com/imathis/octopress.git</code>后，远程仓库是这样的：</p>
+
+    <pre><code> matrixzk:octopress matrixzk$ git remote -v
+ origin     git://github.com/imathis/octopress.git (fetch)
+ origin     git://github.com/imathis/octopress.git (push)
+</code></pre>
+
+    <p>这里为我们将远程仓库名由<code>origin</code>修改为<code>octopress</code></p>
+
+    <pre><code> $ git remote rename origin octopress
+</code></pre>
+
+    <p>之后再查看远程仓库，可以看到<code>远程库</code>的名字已经改了</p>
+
+    <pre><code> matrixzk:octopress matrixzk$ git remote -v
+ octopress     git://github.com/imathis/octopress.git (fetch)
+ octopress     git://github.com/imathis/octopress.git (push)
+</code></pre>
+  </li>
+  <li>
+    <p>添加你的<code>Github Pages</code>仓库作为当前本地仓库默认的远程仓库<code>origin</code></p>
+
+    <pre><code> $ git remote add origin git@github.com:matrixzk/matrixzk.github.io.git
+</code></pre>
+
+    <p>然后将远程库中指向之前<code>origin</code>(即<code>imathis/octopress</code>)的<code>master</code>分支的<code>指针</code>指向现在的<code>origin</code>(即<code>matrixzk/matrixzk.github.io</code>)的<code>master</code>分支</p>
+
+    <pre><code> $ git config branch.master.remote origin
+</code></pre>
+
+    <p>之后再查看远程库，可以看到已经将远程库<code>origin</code>指向了我们的<code>Github Pages</code>。</p>
+
+    <pre><code> matrixzk:octopress matrixzk$ git remote -v
+ octopress     git://github.com/imathis/octopress.git (fetch)
+ octopress     git://github.com/imathis/octopress.git (push)
+ origin     git@github.com:matrixzk/matrixzk.github.io.git (fetch)
+ origin     git@github.com:matrixzk/matrixzk.github.io.git (push)
+</code></pre>
+  </li>
+  <li>
+    <p>将本地master分支的名字由<code>master</code>改为<code>source</code></p>
+
+    <pre><code> $ git branch -m master source
+</code></pre>
+
+    <p>之后查看本地分支</p>
+
+    <pre><code> matrixzk:octopress matrixzk$ git branch
+ * source
+</code></pre>
+
+    <p><strong>NOTE:</strong> 理解这里很重要，关于这里为什么要这样做，要结合下边的6一起理解。前边已经提到，用户或组织的 Github Pages 使用 master 分支作为 web 服务的公开目录，为你URL为<code>http://username.github.io</code>的 Pages 提供网站内容(即内容文件)。而当前的本地<code>master</code>分支即整个<code>octopress框架</code>的源码所在的分支。其实本地的<code>master</code>分支就是一个名字为<code>master</code>的<code>指针</code>，它现在指向的是整个 octopress 框架的源码所在的本地分支。我们这里做的其实是把指向整个 octopress 框架的源码所在的本地分支的指针的名字由<code>master</code>改为<code>source</code>，把这个<code>master</code>指针名字让出来，让它指向后边6所初始化的用于<code>web访问</code>的<code>octopress/_deploy</code>目录下的本地仓库的主分支。这样，该目录(本地<code>octopress/_deploy</code>目录)下的本地<code>master</code>分支对应的就是<code>Github Pages</code>远程库的<code>master</code>分支。</p>
+  </li>
+  <li>
+    <p>根据前边所提供的 Github Pages 仓库的 URL 来配置博客的 URL
+从前边所提供的 SSH 或 HTTPS 类型的 URL 中截取仓库名<code>username.github.io</code>，然后从本地的 octopress 目录下读取博客的配置文件<code>_config.yml</code>，将其<code>url</code>参数值改为<code>http://username.github.io</code>。</p>
+  </li>
+  <li>
+    <p>在本地<code>octopress</code>目录下新建<code>_deploy</code>目录，并对其进行 Git 初始化，然后添加<code>Github Pages</code>仓库作为其远程仓库。</p>
+
+    <p>NOTE:此时已经有了两个本地仓库(这个和前边3提到的整个<code>octopress</code>目录(即<code>octopress框架</code>)所对应的本地仓库)指向<code>Github Pages</code>仓库作为其远程仓库了，分别作为其<code>master</code>分支和<code>source</code>分支。</p>
+
+    <pre><code> $ mkdir _deploy
+ $ git init
+ $ git add .
+ $ git commit -m "Octopress init"
+ # 添加 Github Pages 仓库作为其远程仓库
+ $ git remote add origin git@github.com:matrixzk/matrixzk.github.io.git
+</code></pre>
+
+    <p>然后修改<code>Rakefile</code>中<code>deploy_default</code>和<code>deploy_brach</code>两个变量的初始默认值:</p>
+
+    <pre><code> # 代表部署时执行的命令，该'push'为Rakefile中定义的一个rake task
+ deploy_default = "push"   # 初始默认值"rsync"
+ # This will be configured for you when you run config_deploy
+ # 代表部署时执行上述rake task命令’push'时的操作分支
+ deploy_branch  = "master" # 初始默认值"gh-pages"
+</code></pre>
+  </li>
+</ol>
+
+<h3 id="rake-generate">rake generate</h3>
+
+<p>生成<code>jekyll</code>站点</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">compass compile --css-dir source/stylesheets
+</span><span class="line">jekyll build</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h3 id="rake-preview">rake preview</h3>
+
+<p>对修改后的站点(如新写了一篇文章)生成预览，在浏览器中输入<code>http://localhost:4000</code>可看到预览效果。</p>
+
+<h3 id="rake-deploy">rake deploy</h3>
+
+<p>将站点部署到服务器，即发布站点到互联网。由于<code>_deploy</code>目录所代表的本地仓库的<code>master</code>分支对应<code>Github Pages 远程仓库</code>的<code>master</code>分支，该分支目录的内容即<code>Github Pages</code>在互联网上供公开访问的站点内容。因此这里做的主要就是将新写的博客文章copy到<code>_deploy</code>目录下，然后将此修改<code>push</code>到<code>Github Pages</code>远程库的<code>master</code>分支。</p>
+
+<ol>
+  <li>首先查看是否存在预览模式的博客(它们不该被发布)，如果有则删除，并在此重新执行<code>rake generate</code>。</li>
+  <li>将<code>source</code>目录下的文件拷贝到<code>public</code>目录下。</li>
+  <li>进入<code>_deploy</code>目录，执行<code>git pull</code>操作。</li>
+  <li>将<code>public</code>目录的内容拷贝到<code>_deploy</code>目录下。</li>
+  <li>将<code>_deploy</code>目录所对应的本地 master 分支的修改<code>push</code>到 Github Pages 远程库的 master 分支，即将 Github Pages 即你的博客部署到了互联网。这里主要做了如下操作。</li>
+</ol>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">$ cd _deploy
+</span><span class="line">$ git add -A
+</span><span class="line">$ git commit -m "Site updated at #Time.now(即当前时间)"
+</span><span class="line">$ git push origin master  # Pushing generated _deploy website</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h3 id="github-pages-source-">生成 Github Pages远程库的 source 分支</h3>
+
+<p>搭建过程的最后一步是将你本地<code>octopress框架</code>的源码(即本地的<code>source</code>分支)<code>push</code>到<code>Github Pages</code>远程库。注意，此步之前 Github Pages 远程库还不存在<code>source</code>分支。</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">cd octopress
+</span><span class="line">git add .
+</span><span class="line">git commit -m 'your message'
+</span><span class="line">git push origin source # 注意，此时你本地的source分支push到远程库，之后远程库会生成一个source分支</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p><strong>NOTE:</strong> 这里所做的是将本地<code>octopress</code>目录下的本地<code>source</code>分支(前边已将该默认分支名由<code>master</code>改为<code>source</code>)<code>push</code>到 Github Pages 远程库，这样，<code>Github Pages</code>远程库就生成了<code>source</code>分支。至此，<code>Github Pages</code>远程库有了两个分支，即<code>master</code>分支和<code>source</code>分支。这里的<code>master</code>分支所对应的本地分支为本地的<code>octopress/_deploy</code>目录下本地仓库的<code>master</code>分支，主要存放部署完毕生成的供互联网访问的<code>Github Pages</code>站点(即你的博客站点)的内容。<code>source</code>分支所对应的本地分支为本地的整个<code>octopress</code>目录下本地仓库的<code>source</code>分支(即该本地库的主分支，之前将其名字有<code>master</code>改为了<code>source</code>，缘由前边已详述)，主要存放整个<code>octopress框架</code>源码的内容。</p>
+
+<h3 id="rake-newposthello-world">rake new_post[“Hello World”]</h3>
+
+<p>新建一篇博客。这里以新建一篇名为<code>"Hello World"</code>的blog为例。</p>
+
+<ol>
+  <li>
+    <p>判断是否提供了文章title，如果没给的话提示输入title。</p>
+  </li>
+  <li>
+    <p>在<code>source/_posts</code>目录下创建名字为<code>"2014-10-17-hello-world.markdown"</code>的文件，即你新建的博客文章。新建博客的命名规则为<code>YYYY-MM-DD-post-title.markdown</code>。</p>
+
+    <pre><code> filename = "#{source_dir}/#{posts_dir}/#{Time.now.strftime('%Y-%m-%d')}-#{title.to_url}.#{new_post_ext}"
+</code></pre>
+
+    <p><strong>NOTE:</strong> 如果相同文件名的文件已经存在，会询问你是否覆盖原文件，如果否，则流程终止(<code>abort</code>)。这里所说相同文件名指的是自动生成的时间也相同。这个时间的作用，一是用来区分相同名字(<code>post title</code>)的文章，二是用来为决定博客文章列表的顺序。</p>
+  </li>
+  <li>
+    <p>在新建的<code>"2014-10-17-hello-world.markdown"</code>文件开头写入如下内容</p>
+
+    <pre><code> ---
+ layout: post
+ title: "hello world"
+ date: 2014-10-17 19:59
+ comments: true
+ external-url:
+ categories:
+ ---
+</code></pre>
+
+    <p>这段<a href="http://jekyllrb.com/docs/frontmatter/">yaml front matter</a>主要是告诉<code>jekyll</code>你新建博客的一些生成规则。这里可以让你关掉评论功能，或者给你新建的文章添加分类。如果你在与多个作者同时维护一个博客，添加<code>author: Your Name</code> 到上述脚本中可以在适当的位置显示你的名字。如果你在写一篇草稿，添加<code>published: false</code>可以防止在你生成(<code>generate</code>)博客时把这篇草稿发布出去。如果你要发布一篇链接博客(<code>linklog</code>)，即点击标题后会跳转到另一个站点的某篇文章，只需将<code>external-url</code>参数值设为指定站点文章的<code>url</code>即可，例如：</p>
+
+    <pre><code> external-url: http://opinionguy.com/post/uninformed-rant-vs-straw-man/
+</code></pre>
+
+    <p>按如下方式可以给你新建文章添加一或多个类别(<code>category</code>)。</p>
+
+    <pre><code> # 一个category
+ categories: Sass
+ # 多个categories的例子1
+ categories: [CSS3, Sass, Media Queries]
+ # 多个categories的例子2
+ categories:
+ - CSS3
+ - Sass
+ - Media Queries
+</code></pre>
+  </li>
+</ol>
+
+<hr />
+
+<p>好了，到此为止已经将使用<code>octopress</code>搭建基于<code>Github Pages</code>个人博客的整个过程和边边角角都介绍了。有些命令和术语可能理解得不够准确，欢迎指正。</p>
+]]></content>
+  </entry>
+  
+</feed>
